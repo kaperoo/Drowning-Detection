@@ -48,7 +48,8 @@ def run_inference(image):
     return output
 
 
-folder = '../dataset/train/tr_underwater/tr_u_drown'
+# folder = '../dataset/train/tr_underwater/tr_u_drown'
+folder = '../dataset/train/tr_underwater/tr_u_swim'
 
 # Loop over videos in the folder
 for video_filename in os.listdir(folder):
@@ -91,9 +92,9 @@ for video_filename in os.listdir(folder):
         # if more than one person is detected, take the one with the highest confidence
         if keypoints.shape[0] > 1:
             # keep only the keypoints of the person with the highest confidence
-            keypoints = keypoints[torch.argmax(keypoints[:, 6]), 7:].T
+            keypoints = keypoints[torch.argmax(keypoints[:, 6]), 7:]
         elif keypoints.shape[0] == 1:
-            keypoints = keypoints[0, 7:].T
+            keypoints = keypoints[0, 7:]
         else:
             continue
 
