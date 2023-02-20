@@ -49,63 +49,69 @@ def run_inference(image):
 
 
 # folder = '../dataset/train/tr_underwater/tr_u_drown'
-folder = '../dataset/train/tr_underwater/tr_u_swim'
+# folder = '../dataset/train/tr_underwater/tr_u_swim'
+# folder = '../dataset/train/tr_overhead'
+folder = ['../dataset/train/tr_underwater/tr_u_misc', '../dataset/train/tr_underwater/tr_u_idle']
 
 # Loop over videos in the folder
-for video_filename in os.listdir(folder):
-    if not video_filename.endswith(".mp4"):
-        continue
-    print(video_filename)
-
-    # Load video
-    cap = cv2.VideoCapture(os.path.join(folder, video_filename))
-
-    # Create lists to store keypoints and class labels
-    keypoints_list = []
-
-    # Loop over video frames
-    while True:
-        ret, frame = cap.read()
-        if not ret:
-            break
-
-        # Run YOLOv7 on the frame
-        frame = cv2.cvtColor(frame, cv2.COLOR_BGR2RGB)
-        output = run_inference(frame)
-
-        # Extract keypoints from the output
-        keypoints = []
-        keypoints = non_max_suppression_kpt(output, 
-                                     0.25, # Confidence Threshold
-                                     0.65, # IoU Threshold
-                                     nc=model.yaml['nc'], # Number of Classes
-                                     nkpt=model.yaml['nkpt'], # Number of Keypoints
-                                     kpt_label=True)
-        with torch.no_grad():
-            keypoints = output_to_keypoint(keypoints)
-
-
-
-        # Convert keypoints to PyTorch tensor
-        keypoints = torch.tensor(keypoints).float()
-
-        # if more than one person is detected, take the one with the highest confidence
-        if keypoints.shape[0] > 1:
-            # keep only the keypoints of the person with the highest confidence
-            keypoints = keypoints[torch.argmax(keypoints[:, 6]), 7:]
-        elif keypoints.shape[0] == 1:
-            keypoints = keypoints[0, 7:]
-        else:
+# for directory in os.listdir(folder):
+for directory in folder:
+    # for video_filename in os.listdir(os.path.join(folder, directory)):
+    for video_filename in os.listdir(os.path.join(directory)):
+        if not video_filename.endswith(".mp4"):
             continue
+        print(video_filename)
 
-        # Save keypoints
-        keypoints_list.append(keypoints)
+        # Load video
+        # cap = cv2.VideoCapture(os.path.join(folder, directory, video_filename))
+        cap = cv2.VideoCapture(os.path.join(directory, video_filename))
 
-    # Release video capture
-    cap.release()
+        # Create lists to store keypoints and class labels
+        keypoints_list = []
 
-    # Convert list to PyTorch tensor
-    keypoints_tensor = torch.stack(keypoints_list)
+        # Loop over video frames
+        while True:
+            ret, frame = cap.read()
+            if not ret:
+                break
 
-    # Save keypoints to file
-    torch.save(keypoints_tensor, os.path.join("../keypoints", video_filename + ".pt"))
+            # Run YOLOv7 on the frame
+            frame = cv2.cvtColor(frame, cv2.COLOR_BGR2RGB)
+            output = run_inference(frame)
+
+            # Extract keypoints from the output
+            keypoints = []
+            keypoints = non_max_suppression_kpt(output, 
+                                        0.25, # Confidence Threshold
+                                        0.65, # IoU Threshold
+                                        nc=model.yaml['nc'], # Number of Classes
+                                        nkpt=model.yaml['nkpt'], # Number of Keypoints
+                                        kpt_label=True)
+            with torch.no_grad():
+                keypoints = output_to_keypoint(keypoints)
+
+
+
+            # Convert keypoints to PyTorch tensor
+            keypoints = torch.tensor(keypoints).float()
+
+            # if more than one person is detected, take the one with the highest confidence
+            if keypoints.shape[0] > 1:
+                # keep only the keypoints of the person with the highest confidence
+                keypoints = keypoints[torch.argmax(keypoints[:, 6]), 7:]
+            elif keypoints.shape[0] == 1:
+                keypoints = keypoints[0, 7:]
+            else:
+                continue
+
+            # Save keypoints
+            keypoints_list.append(keypoints)
+
+        # Release video capture
+        cap.release()
+
+        # Convert list to PyTorch tensor
+        keypoints_tensor = torch.stack(keypoints_list)
+
+        # Save keypoints to file
+        torch.save(keypoints_tensor, os.path.join("../keypoints", video_filename + ".pt"))
