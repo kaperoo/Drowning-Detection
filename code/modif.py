@@ -2,6 +2,9 @@ import torch
 from torchvision import transforms
 from os.path import dirname, join
 
+import sys
+sys.path.append(join(dirname(__file__), "../yolov7"))
+
 from utils.datasets import letterbox
 from utils.general import non_max_suppression_kpt
 from utils.plots import output_to_keypoint, plot_skeleton_kpts, plot_one_box
@@ -15,7 +18,7 @@ device = torch.device("cuda:0" if torch.cuda.is_available() else "cpu")
 print(device)
 
 def load_model():
-    model = torch.load(join(dirname(__file__), "yolov7-w6-pose.pt"), map_location=device)['model']
+    model = torch.load(join(dirname(__file__), "../yolov7/yolov7-w6-pose.pt"), map_location=device)['model']
     # Put in inference mode
     model.float().eval()
 
@@ -34,8 +37,10 @@ def run_inference(image):
     
     # Apply transforms
     image = transforms.ToTensor()(image) # torch.Size([3, 567, 960])
+    # image = torch.tensor(np.array([image.numpy()]))
     if torch.cuda.is_available():
         image = image.half().to(device)
+    # output, _ = model(image)
     # Turn image into batch
     image = image.unsqueeze(0) # torch.Size([1, 3, 567, 960])
     with torch.no_grad():
@@ -59,7 +64,7 @@ def draw_keypoints(output, image):
     nimg = cv2.cvtColor(nimg, cv2.COLOR_RGB2BGR)
     for idx in range(output.shape[0]):
         plot_skeleton_kpts(nimg, output[idx, 7:].T, 3)
-        plot_one_box(output[idx, 0:4], nimg, label='Drowning', color=(255, 0, 0), line_thickness=3)
+        # plot_one_box(output[idx, 0:4], nimg, label='Drowning', color=(255, 0, 0), line_thickness=3)
 
     return nimg
 
@@ -114,5 +119,5 @@ def pose_estimation_video(folder):
 
 #     out.release()
 #     cv2.destroyAllWindows()
-
-pose_estimation_video('../../dataset/train/tr_underwater/tr_u_drown')
+folder = '../dataset/train/tr_underwater/tr_u_drown'
+pose_estimation_video(folder)
