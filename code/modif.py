@@ -6,7 +6,7 @@ import sys
 sys.path.append(join(dirname(__file__), "../yolov7"))
 
 from utils.datasets import letterbox
-from utils.general import non_max_suppression_kpt
+from utils.general import non_max_suppression_kpt, xywh2xyxy
 from utils.plots import output_to_keypoint, plot_skeleton_kpts, plot_one_box
 
 import matplotlib.pyplot as plt
@@ -54,17 +54,30 @@ def draw_keypoints(output, image):
                                      nc=model.yaml['nc'], # Number of Classes
                                      nkpt=model.yaml['nkpt'], # Number of Keypoints
                                      kpt_label=True)
+    
+    # print(output[0].size())
     with torch.no_grad():
         output = output_to_keypoint(output)
 
-    print(output[0, 0:7])
+    # print(output[0, 7:])
 
     nimg = image[0].permute(1, 2, 0) * 255
     nimg = nimg.cpu().numpy().astype(np.uint8)
     nimg = cv2.cvtColor(nimg, cv2.COLOR_RGB2BGR)
     for idx in range(output.shape[0]):
         plot_skeleton_kpts(nimg, output[idx, 7:].T, 3)
-        # plot_one_box(output[idx, 0:4], nimg, label='Drowning', color=(255, 0, 0), line_thickness=3)
+    
+    boxcoords = xywh2xyxy(output[:, 2:6])
+    plot_one_box(boxcoords[0], nimg, label='Drowning', color=(0, 255, 0), line_thickness=2)
+    # xcoord = int(output[0, 2])
+    # ycoord = int(output[0, 3])
+    # widthcoord = int(output[0, 4])
+    # heightcoord = int(output[0, 5])
+    # print(xcoord, ycoord, widthcoord, heightcoord)
+    # plot a line with cv2.line
+    # cv2.line(nimg, (int(xcoord), int(ycoord)), (int(xcoord) + int(widthcoord), int(ycoord) + int(heightcoord)), (0, 255, 0), 2)
+    # cv2.line(nimg, (0,0), (100,100), (0, 255, 0), 2)
+    # cv2.rectangle(nimg, (xcoord-int(widthcoord/2), ycoord-int(heightcoord/2)), (xcoord + int(widthcoord/2), ycoord + int(heightcoord/2)), (0, 255, 0), 2)
 
     return nimg
 
