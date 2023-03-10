@@ -54,14 +54,16 @@ def run_inference(image):
 # folder = '../dataset/train/tr_underwater/tr_u_swim'
 # folder = '../dataset/train/tr_overhead'
 # folder = ['../dataset/train/tr_underwater/tr_u_misc', '../dataset/train/tr_underwater/tr_u_idle']
-folder = ['../dataset/train/tr_underwater/tr_u_drown', 
-          '../dataset/train/tr_underwater/tr_u_swim', 
-          '../dataset/train/tr_underwater/tr_u_misc', 
-          '../dataset/train/tr_underwater/tr_u_idle',
-          '../dataset/train/tr_overhead/tr_o_drown',
-          '../dataset/train/tr_overhead/tr_o_swim',
+folder = [
+        #   '../dataset/train/tr_underwater/tr_u_drown', 
+        #   '../dataset/train/tr_underwater/tr_u_swim', 
+        #   '../dataset/train/tr_underwater/tr_u_misc', 
+        #   '../dataset/train/tr_underwater/tr_u_idle',
+        #   '../dataset/train/tr_overhead/tr_o_drown',
+        #   '../dataset/train/tr_overhead/tr_o_swim',
           '../dataset/train/tr_overhead/tr_o_misc',
-          '../dataset/train/tr_overhead/tr_o_idle']
+          '../dataset/train/tr_overhead/tr_o_idle'
+        ]
 
 # Loop over videos in the folder
 # for directory in os.listdir(folder):
