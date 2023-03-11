@@ -3,3 +3,4 @@ FYPVE
 dataset*
 nntest
 code/data
+__pycache__

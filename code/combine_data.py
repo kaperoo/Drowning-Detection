@@ -1,3 +1,4 @@
+#Purpose: Combine pt files into one file and create labels
 import torch
 import os
 
