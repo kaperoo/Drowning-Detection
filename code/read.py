@@ -7,7 +7,7 @@ from torch.utils.data import Dataset, DataLoader
 folder = "/home/kacperroemer/Code/FYP/code"
 
 class KeypointDataset(Dataset):
-    def __init__(self, annotations_file, keypoint_file, transform=None, target_transform=None):
+    def __init__(self, annotations_file, keypoint_file, transform=True, target_transform=True):
         self.img_labels = torch.load(os.path.join(folder, annotations_file))
         self.keypoint_file = torch.load(os.path.join(folder, keypoint_file))
         self.transform = transform
@@ -20,7 +20,9 @@ class KeypointDataset(Dataset):
         image = self.keypoint_file[idx]
         label = self.img_labels[idx]
         if self.transform:
-            image = self.transform(image)
+            # image = self.transform(image)
+            image = torch.tensor(image).float()
         if self.target_transform:
-            label = self.target_transform(label)
+            # label = self.target_transform(label)
+            label = torch.tensor(label).float()
         return image, label

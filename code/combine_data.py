@@ -2,7 +2,9 @@
 import torch
 import os
 
-folder = "/home/kacperroemer/Code/FYP/keypoints2.0"
+# folder = "/home/kacperroemer/Code/FYP/keypoints2.0"
+folder = "/home/kacperroemer/Code/FYP/keypoints_test"
+
 
 labels = torch.empty(0, dtype=torch.long)
 # keypoints are different size tensors [x, 51]
@@ -29,5 +31,7 @@ for file in os.listdir(folder):
         labels = torch.cat((labels, torch.full((data.shape[0],), label, dtype=torch.long)), 0)
         # print(labels.shape)
         # print(keypoints.shape)
-torch.save(keypoints, "keypoints.pt")
-torch.save(labels, "labels.pt")
+torch.save(keypoints, "keypoints_test.pt")
+# torch.save(keypoints, "keypoints.pt")
+
+# torch.save(labels, "labels.pt")

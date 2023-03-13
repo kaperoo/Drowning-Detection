@@ -61,8 +61,10 @@ folder = [
         #   '../dataset/train/tr_underwater/tr_u_idle',
         #   '../dataset/train/tr_overhead/tr_o_drown',
         #   '../dataset/train/tr_overhead/tr_o_swim',
-          '../dataset/train/tr_overhead/tr_o_misc',
-          '../dataset/train/tr_overhead/tr_o_idle'
+        #   '../dataset/train/tr_overhead/tr_o_misc',
+        #   '../dataset/train/tr_overhead/tr_o_idle'
+        #   '../dataset/test/te_underwater',
+          '../dataset/test/te_overhead'
         ]
 
 # Loop over videos in the folder
@@ -150,4 +152,6 @@ for directory in folder:
 
 
         # Save keypoints to file
-        torch.save(keypoints_tensor, os.path.join("../keypoints2.0", video_filename + ".pt"))
+        torch.save(keypoints_tensor, os.path.join("../keypoints_test", video_filename + ".pt"))
+
+        # torch.save(keypoints_tensor, os.path.join("../keypoints2.0", video_filename + ".pt"))
