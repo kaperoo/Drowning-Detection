@@ -3,7 +3,7 @@ from torch import load
 from cnnmodel import CNNModel
 import os
 
-folder = "/home/kacperroemer/Code/FYP/keypoints_test"
+folder = "/home/kacperroemer/Code/FYP/keypoints_test_norm"
 
 # use model to predict
 model = CNNModel().to('cuda:0')

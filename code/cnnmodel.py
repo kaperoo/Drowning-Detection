@@ -4,49 +4,30 @@ import torchvision.transforms as transforms
 from read import KeypointDataset
 from torch import nn, save, load
 
-
-train_dataset = KeypointDataset("keypoints.pt", "labels.pt")
-
-# test_dataset = datasets.MNIST(root='./data',
-                                    # train = False,
-                                    # transform=transforms.ToTensor())
-
-batch_size = int(90/30)
-n_iters = int(2740*30)
-num_epochs = n_iters / (len(train_dataset) / batch_size)
-num_epochs = int(num_epochs)
-
-train_loader = torch.utils.data.DataLoader(dataset=train_dataset,
-                                            batch_size=batch_size,
-                                            shuffle=True)
-
-# test_loader = torch.utils.data.DataLoader(dataset=test_dataset,
-#                                             batch_size=batch_size,
-#                                             shuffle=False)
-
 class CNNModel(nn.Module):
     def __init__(self):
         super(CNNModel, self).__init__()
 
-        self.conv1 = nn.Conv1d(in_channels=1, out_channels=16, kernel_size=5)
-        self.conv2 = nn.Conv1d(in_channels=16, out_channels=32, kernel_size=5)
-        self.conv3 = nn.Conv1d(in_channels=32, out_channels=64, kernel_size=5)
-        self.fc1 = nn.Linear(128, 4)
+        self.conv1 = nn.Conv2d(17, 50, kernel_size=(1, 3), padding=(0, 1))
+        self.conv2 = nn.Conv2d(50, 50, kernel_size=(1, 3), padding=(0, 1))
+        self.conv3 = nn.Conv2d(50, 50, kernel_size=(1, 3), padding=(0, 1))
+        self.pool = nn.MaxPool2d(kernel_size=(1, 3), stride=(1, 1), padding=(0, 1))
+        self.fc1 = nn.Linear(50 * 3, 256)
+        self.fc2 = nn.Linear(256, 4)
+        self.relu = nn.ReLU()
 
     def forward(self, x):
-        # input shape: (batch_size, 1, 51)
-        x = self.conv1(x)  # output shape: (batch_size, 16, 47)
-        x = nn.functional.relu(x)
-        x = nn.functional.max_pool1d(x, kernel_size=2, stride=2) # output shape: (batch_size, 16, 23)
-        x = self.conv2(x)  # output shape: (batch_size, 32, 19)
-        x = nn.functional.relu(x)
-        x = nn.functional.max_pool1d(x, kernel_size=2, stride=2) # output shape: (batch_size, 32, 9)
-        x = self.conv3(x)  # output shape: (batch_size, 64, 5)
-        x = nn.functional.relu(x)
-        x = nn.functional.max_pool1d(x, kernel_size=2, stride=2) # output shape: (batch_size, 64, 2)
-        x = x.view(-1, 64*2)  # flatten
-        x = self.fc1(x)  # output shape: (batch_size, 128)
+        x = x.view(-1, 17, 3, 1) # reshape to (batch_size, channels, height, width)
+        x = self.relu(self.conv1(x))
+        x = self.conv2(x)
+        x = self.relu(x)
+        x = self.pool(x)
+        x = self.pool(self.relu(self.conv3(x)))
+        x = x.view(-1, 50 * 3)
+        # print(x.shape)
 
+        x = self.relu(self.fc1(x))
+        x = self.fc2(x)
         return x
     
 model = CNNModel()
@@ -54,41 +35,63 @@ model = CNNModel()
 device = torch.device("cuda:0" if torch.cuda.is_available() else "cpu")
 model.to(device)
 
-# criterion = nn.CrossEntropyLoss()
-criterion = nn.MSELoss()
+criterion = nn.CrossEntropyLoss()
+# criterion = nn.MSELoss()
 
 learning_rate = 1e-3
 
-optimizer = torch.optim.SGD(model.parameters(), lr=learning_rate)
+# optimizer = torch.optim.SGD(model.parameters(), lr=learning_rate)
+optimizer = torch.optim.Adam(model.parameters(), lr=learning_rate)
 
-# for epoch in range(num_epochs):
-#     for i, (labels, images) in enumerate(train_loader):
-#         # Load images as a torch tensor with gradient accumulation abilities
-#         images = images.requires_grad_().to(device)
-#         labels = labels.to(device)
+if __name__ == "__main__":
 
-#         # make input channel = 1
-#         images = images.unsqueeze(1)
+    train_dataset = KeypointDataset("keypoints_norm17x3.pt", "labels_norm.pt")
 
-#         # Clear gradients w.r.t. parameters
-#         optimizer.zero_grad()
+    #data size is 49320
+    batch_size = int(90/9)
+    n_iters = int(1096*100*9)
+    num_epochs = n_iters / (len(train_dataset) / batch_size)
+    num_epochs = int(num_epochs)
 
-#         # Forward pass to get output/logits
-#         outputs = model(images)
+    train_loader = torch.utils.data.DataLoader(dataset=train_dataset,
+                                                batch_size=batch_size,
+                                                shuffle=True)
 
-#         predictions = torch.argmax(outputs, dim=1).float()
-#         predictions = predictions.requires_grad_().to(device)
+    for epoch in range(num_epochs):
+        runnung_loss = 0.0
+        for i, (labels, images) in enumerate(train_loader):
+            # Load images as a torch tensor with gradient accumulation abilities
+            images = images.requires_grad_().to(device)
+            labels = labels.to(device)
 
-#         # Calculate Loss: softmax --> cross entropy loss
-#         loss = criterion(predictions, labels)
+            # make input channel = 1
+            images = images.unsqueeze(1)
+            # print(images.shape)
 
-#         # Getting gradients w.r.t. parameters
-#         loss.backward()
+            # Clear gradients w.r.t. parameters
+            optimizer.zero_grad()
 
-#         # Updating parameters
-#         optimizer.step()
+            # Forward pass to get output/logits
+            outputs = model(images)
 
-#     print(f"Epoch: ", epoch, "Loss: ", loss.item())
+            # Calculate Loss: softmax --> cross entropy loss
+            loss = criterion(outputs, labels.long())
 
-# with open('model_state.pt', 'wb') as f: 
-#     save(model.state_dict(), f) 
+
+            # Getting gradients w.r.t. parameters
+            loss.backward()
+
+            runnung_loss += loss.item()
+
+            # Updating parameters
+            optimizer.step()
+
+            if i % 100 == 9:
+                print("Epoch: ", epoch, "Loss: ", runnung_loss/10)
+                runnung_loss = 0.0
+                
+
+        # print(f"Epoch: ", epoch, "Loss: ", loss.item())
+
+    with open('model_state.pt', 'wb') as f: 
+        save(model.state_dict(), f) 

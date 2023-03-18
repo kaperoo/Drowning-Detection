@@ -2,8 +2,8 @@
 import torch
 import os
 
-# folder = "/home/kacperroemer/Code/FYP/keypoints2.0"
-folder = "/home/kacperroemer/Code/FYP/keypoints_test"
+folder = "/home/kacperroemer/Code/FYP/keypoints_norm"
+# folder = "/home/kacperroemer/Code/FYP/keypoints_test"
 
 
 labels = torch.empty(0, dtype=torch.long)
@@ -29,9 +29,22 @@ for file in os.listdir(folder):
             label = 3
 
         labels = torch.cat((labels, torch.full((data.shape[0],), label, dtype=torch.long)), 0)
-        # print(labels.shape)
-        # print(keypoints.shape)
-torch.save(keypoints, "keypoints_test.pt")
-# torch.save(keypoints, "keypoints.pt")
+        
+# torch.save(keypoints, "keypoints_test.pt")
+keypoints = keypoints.reshape(keypoints.shape[0], 17, 3)
 
-# torch.save(labels, "labels.pt")
+# create a copy of the keypoints tensor
+keypoints_mirror = keypoints.clone()
+
+# augment the data with mirrored keypoints
+for frame in keypoints_mirror:
+    for kp in frame:
+        kp[0] = 640 - kp[0]
+
+keypoints = torch.cat((keypoints, keypoints_mirror), 0)
+labels = torch.cat((labels, labels), 0)
+
+print(keypoints.shape)
+
+torch.save(keypoints, "keypoints_norm17x3.pt")
+torch.save(labels, "labels_norm.pt")

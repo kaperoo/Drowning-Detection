@@ -38,22 +38,17 @@ def run_inference(image):
     # Resize and pad image
     # print(image.shape)
     image = letterbox(image, new_shape = (640), stride=64, auto=True)[0] # shape: (567, 960, 3)
-    # print(image.shape)
+    # print(image.shape) # 384x640
     # Apply transforms
-    image = transforms.ToTensor()(image) # torch.Size([3, 567, 960])
+    image = transforms.ToTensor()(image) 
     if torch.cuda.is_available():
         image = image.half().to(device)
     # Turn image into batch
-    image = image.unsqueeze(0) # torch.Size([1, 3, 567, 960])
+    image = image.unsqueeze(0)
     with torch.no_grad():
         output, _ = model(image)
     return output
 
-
-# folder = '../dataset/train/tr_underwater/tr_u_drown'
-# folder = '../dataset/train/tr_underwater/tr_u_swim'
-# folder = '../dataset/train/tr_overhead'
-# folder = ['../dataset/train/tr_underwater/tr_u_misc', '../dataset/train/tr_underwater/tr_u_idle']
 folder = [
         #   '../dataset/train/tr_underwater/tr_u_drown', 
         #   '../dataset/train/tr_underwater/tr_u_swim', 
@@ -63,17 +58,13 @@ folder = [
         #   '../dataset/train/tr_overhead/tr_o_swim',
         #   '../dataset/train/tr_overhead/tr_o_misc',
         #   '../dataset/train/tr_overhead/tr_o_idle'
-        #   '../dataset/test/te_underwater',
+          '../dataset/test/te_underwater',
           '../dataset/test/te_overhead'
         ]
 
 # Loop over videos in the folder
 # for directory in os.listdir(folder):
 for directory in folder:
-    # labels
-    # label_list = []
-
-    # for video_filename in os.listdir(os.path.join(folder, directory)):
     for video_filename in os.listdir(os.path.join(directory)):
         if not video_filename.endswith(".mp4"):
             continue
@@ -82,13 +73,10 @@ for directory in folder:
         keypoints_list = []
 
         # Load video
-        # cap = cv2.VideoCapture(os.path.join(folder, directory, video_filename))
         cap = cv2.VideoCapture(os.path.join(directory, video_filename))
     
-
         # Loop over video frames
-        while True:
-            
+        while True:        
             os.system('cls' if os.name == 'nt' else 'clear')
             print("Processing video:", video_filename)
             print("Frame:", cap.get(cv2.CAP_PROP_POS_FRAMES), "/", cap.get(cv2.CAP_PROP_FRAME_COUNT))
@@ -122,23 +110,40 @@ for directory in folder:
             # print(keypoints.type())
 
             # if more than one person is detected, take the one with the highest confidence
+            # if keypoints.shape[0] > 1:
+            #     # keep only the keypoints of the person with the highest confidence
+            #     keypoints = keypoints[torch.argmax(keypoints[:, 6]), 7:]
+            # elif keypoints.shape[0] == 1:
+            #     keypoints = keypoints[0, 7:]
+            # else:
+            #     continue
+
             if keypoints.shape[0] > 1:
                 # keep only the keypoints of the person with the highest confidence
-                keypoints = keypoints[torch.argmax(keypoints[:, 6]), 7:]
+                keypoints = keypoints[torch.argmax(keypoints[:, 6]), :]
             elif keypoints.shape[0] == 1:
-                keypoints = keypoints[0, 7:]
+                keypoints = keypoints[0, :]
             else:
                 continue
 
-            # label = video_filename.split('_')[2]
-            # if label == 'drown':
-            #     label = 0
-            # elif label == 'swim':
-            #     label = 1
-            # elif label == 'misc':
-            #     label = 2
-            # elif label == 'idle':
-            #     label = 3
+            # normalize keypoints to the center of the image
+            xchange = 640/2 - keypoints[2]
+            ychange = 384/2 - keypoints[3]
+
+            keypoints = keypoints[7:]
+            for idx, point in enumerate(keypoints):
+                if idx % 3 == 0:
+                    keypoints[idx] = point + xchange
+                elif idx % 3 == 1:
+                    keypoints[idx] = point + ychange
+
+            # blank = np.zeros((384, 640, 3), np.uint8)
+            # for i in range(0, len(keypoints), 3):
+            #     cv2.circle(blank, (int(keypoints[i]), int(keypoints[i+1])), 3, (255, 0, 0), -1)
+
+            # cv2.imshow("frame", blank)
+            # cv2.waitKey(1)
+
 
             # Save keypoints
             keypoints_list.append(keypoints)
@@ -152,6 +157,10 @@ for directory in folder:
 
 
         # Save keypoints to file
-        torch.save(keypoints_tensor, os.path.join("../keypoints_test", video_filename + ".pt"))
+        torch.save(keypoints_tensor, os.path.join("../keypoints_test_norm", video_filename + ".pt"))
+
+        # torch.save(keypoints_tensor, os.path.join("../keypoints_norm", video_filename + ".pt"))
+
+        # torch.save(keypoints_tensor, os.path.join("../keypoints_test", video_filename + ".pt"))
 
         # torch.save(keypoints_tensor, os.path.join("../keypoints2.0", video_filename + ".pt"))
