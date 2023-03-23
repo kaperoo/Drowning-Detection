@@ -8,10 +8,10 @@ class CNNModel(nn.Module):
     def __init__(self):
         super(CNNModel, self).__init__()
 
-        self.conv1 = nn.Conv2d(17, 50, kernel_size=(1, 3), padding=(0, 1))
-        self.conv2 = nn.Conv2d(50, 50, kernel_size=(1, 3), padding=(0, 1))
-        self.conv3 = nn.Conv2d(50, 50, kernel_size=(1, 3), padding=(0, 1))
-        self.pool = nn.MaxPool2d(kernel_size=(1, 3), stride=(1, 1), padding=(0, 1))
+        self.conv1 = nn.Conv2d(17, 50, kernel_size=(3, 3), padding=(1, 1)) # prev kernel_size=(1, 3), padding=(0, 1)
+        self.conv2 = nn.Conv2d(50, 50, kernel_size=(3, 3), padding=(1, 1))
+        self.conv3 = nn.Conv2d(50, 50, kernel_size=(3, 3), padding=(1, 1))
+        self.pool = nn.MaxPool2d(kernel_size=(1, 3), stride=(1, 1), padding=(1, 1))
         self.fc1 = nn.Linear(50 * 3, 256)
         self.fc2 = nn.Linear(256, 4)
         self.relu = nn.ReLU()
@@ -48,8 +48,8 @@ if __name__ == "__main__":
     train_dataset = KeypointDataset("keypoints_norm17x3.pt", "labels_norm.pt")
 
     #data size is 49320
-    batch_size = int(90/9)
-    n_iters = int(1096*100*9)
+    batch_size = int(90/3)
+    n_iters = int(1096*50*3)
     num_epochs = n_iters / (len(train_dataset) / batch_size)
     num_epochs = int(num_epochs)
 

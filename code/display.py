@@ -2,12 +2,14 @@ import torch
 from torchvision import transforms
 from os.path import dirname, join
 
+from cnnmodel import CNNModel
+
 import sys
 sys.path.append(join(dirname(__file__), "../yolov7"))
 
 from utils.datasets import letterbox
-from utils.general import non_max_suppression_kpt
-from utils.plots import output_to_keypoint, plot_skeleton_kpts
+from utils.general import non_max_suppression_kpt, xywh2xyxy
+from utils.plots import output_to_keypoint, plot_skeleton_kpts, plot_one_box
 
 import matplotlib.pyplot as plt
 import cv2
@@ -17,7 +19,7 @@ import os
 
 # Load YOLOv7 model
 device = torch.device("cuda:0" if torch.cuda.is_available() else "cpu")
-# print(device)
+print(device)
 
 def load_model():
     model = torch.load(join(dirname(__file__), "../yolov7/yolov7-w6-pose.pt"), map_location=device)['model']
@@ -47,7 +49,42 @@ def run_inference(image):
     image = image.unsqueeze(0)
     with torch.no_grad():
         output, _ = model(image)
-    return output
+    return output, image
+
+def draw_box_and_pred(image, pred, file):
+
+    label = file.split("_")[2]
+    labelid = 4
+    if label == "drown":
+        labelid = 0
+    elif label == "swim":
+        labelid = 1
+    elif label == "misc":
+        labelid = 2
+    elif label == "idle":
+        labelid = 3
+
+    if pred == 0:
+        inf_text = 'drowning'
+    elif pred == 1:
+        inf_text = 'swimming'
+    elif pred == 2:
+        inf_text = 'miscellaneous'
+    elif pred == 3:
+        inf_text = 'idle'
+
+    nimg = image[0].permute(1, 2, 0) * 255
+    nimg = nimg.cpu().numpy().astype(np.uint8)
+    nimg = cv2.cvtColor(nimg, cv2.COLOR_RGB2BGR)
+    for idx in range(kpdisplay.shape[0]):
+        plot_skeleton_kpts(nimg, kpdisplay[idx, 7:].T, 3)
+    
+    boxcoords = xywh2xyxy(kpdisplay[:, 2:6])
+    colour = (0, 100, 0) if pred == labelid else (0, 0, 100)
+    plot_one_box(boxcoords[0], nimg, label=inf_text, color=colour, line_thickness=2)
+    cv2.imshow('frame', nimg)
+    cv2.waitKey(1)
+
 
 folder = [
         #   '../dataset/train/tr_underwater/tr_u_drown', 
@@ -62,6 +99,10 @@ folder = [
           '../dataset/test/te_overhead'
         ]
 
+cnnmodel = CNNModel().to('cuda:0')
+with open('model_state.pt', 'rb') as f:
+    cnnmodel.load_state_dict(torch.load(f))
+
 # Loop over videos in the folder
 # for directory in os.listdir(folder):
 for directory in folder:
@@ -69,27 +110,18 @@ for directory in folder:
         if not video_filename.endswith(".mp4"):
             continue
 
-        # Create lists to store keypoints
-        keypoints_list = []
-
         # Load video
         cap = cv2.VideoCapture(os.path.join(directory, video_filename))
     
         # Loop over video frames
         while True:        
-            os.system('cls' if os.name == 'nt' else 'clear')
-            print("Processing video:", video_filename)
-            print("Frame:", cap.get(cv2.CAP_PROP_POS_FRAMES), "/", cap.get(cv2.CAP_PROP_FRAME_COUNT))
-            # print video num out of total num
-            print("Video:", os.listdir(directory).index(video_filename) + 1, "/", len(os.listdir(directory)))
-
             ret, frame = cap.read()
             if not ret:
                 break
 
             # Run YOLOv7 on the frame
             frame = cv2.cvtColor(frame, cv2.COLOR_BGR2RGB)
-            output = run_inference(frame)
+            output, image = run_inference(frame)
 
             # Extract keypoints from the output
             keypoints = []
@@ -106,17 +138,8 @@ for directory in folder:
 
             # Convert keypoints to PyTorch tensor
             keypoints = torch.tensor(keypoints).float()
-            # print(keypoints.shape)
-            # print(keypoints.type())
 
-            # if more than one person is detected, take the one with the highest confidence
-            # if keypoints.shape[0] > 1:
-            #     # keep only the keypoints of the person with the highest confidence
-            #     keypoints = keypoints[torch.argmax(keypoints[:, 6]), 7:]
-            # elif keypoints.shape[0] == 1:
-            #     keypoints = keypoints[0, 7:]
-            # else:
-            #     continue
+            kpdisplay = keypoints.clone()
 
             if keypoints.shape[0] > 1:
                 # keep only the keypoints of the person with the highest confidence
@@ -137,30 +160,17 @@ for directory in folder:
                 elif idx % 3 == 1:
                     keypoints[idx] = point + ychange
 
-            # blank = np.zeros((384, 640, 3), np.uint8)
-            # for i in range(0, len(keypoints), 3):
-            #     cv2.circle(blank, (int(keypoints[i]), int(keypoints[i+1])), 3, (255, 0, 0), -1)
+            inf_output = torch.argmax(cnnmodel(keypoints.unsqueeze(0).to('cuda:0')))
+            if inf_output == 0:
+                inf_text = 'drowning'
+            elif inf_output == 1:
+                inf_text = 'swimming'
+            elif inf_output == 2:
+                inf_text = 'miscellaneous'
+            elif inf_output == 3:
+                inf_text = 'idle'
 
-            # cv2.imshow("frame", blank)
-            # cv2.waitKey(1)
-
-
-            # Save keypoints
-            keypoints_list.append(keypoints)
-
+            draw_box_and_pred(image, inf_output, video_filename)
         # Release video capture
+        cv2.destroyAllWindows()
         cap.release()
-
-        # Convert list to PyTorch tensor
-        keypoints_tensor = torch.stack(keypoints_list)
-        print("tensor shape", keypoints_tensor.shape)
-
-
-        # Save keypoints to file
-        # torch.save(keypoints_tensor, os.path.join("../keypoints_test_norm", video_filename + ".pt"))
-
-        # torch.save(keypoints_tensor, os.path.join("../keypoints_norm", video_filename + ".pt"))
-
-        # torch.save(keypoints_tensor, os.path.join("../keypoints_test", video_filename + ".pt"))
-
-        # torch.save(keypoints_tensor, os.path.join("../keypoints2.0", video_filename + ".pt"))
