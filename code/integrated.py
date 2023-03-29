@@ -1,3 +1,4 @@
+# PURPOSE: extract keypoints from dataset
 import torch
 from torchvision import transforms
 from os.path import dirname, join

@@ -1,3 +1,5 @@
+# PURPOSE: Predicts the class of a given video using the trained model
+# and plots the confusion matrix
 import torch
 from torch import load
 from cnnmodel import CNNModel
@@ -62,10 +64,10 @@ from sklearn.metrics import confusion_matrix
 import seaborn as sn
 import pandas as pd
 
-cm = confusion_matrix(label_list, scores_list, normalize='true')
+cm = confusion_matrix(label_list, scores_list, normalize='true') #normalize='true'
 df_cm = pd.DataFrame(cm, index = [i for i in ["drown", "swim", "misc", "idle"]],
                     columns = [i for i in ["drown", "swim", "misc", "idle"]])
 plt.figure(figsize = (10,7))
-sn.heatmap(df_cm, annot=True)
+sn.heatmap(df_cm, annot=True) #, fmt='g'
 
 plt.show()

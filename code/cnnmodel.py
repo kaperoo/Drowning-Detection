@@ -1,3 +1,5 @@
+# Purpose: CNN model for keypoint classification
+# classifies 17x3 keypoint data into 4 classes: drown, swim, misc, idle
 import torch
 import torch.nn as nn
 import torchvision.transforms as transforms

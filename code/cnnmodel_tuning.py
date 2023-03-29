@@ -1,3 +1,5 @@
+# PURPOSE: Find oprimal hyperparameters for CNN model using Optuna
+# this is for model based on 17 keypoints with x,y and conf
 import torch
 import torch.nn as nn
 import torchvision.transforms as transforms

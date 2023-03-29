@@ -1,4 +1,5 @@
 #Purpose: Read the data from pt files and create a dataset for training
+# Dataset of keypoint x,y,confidence and labels
 import os
 import pandas as pd
 import torch
