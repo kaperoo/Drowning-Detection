@@ -171,6 +171,9 @@ for directory in folder:
                 inf_text = 'idle'
 
             draw_box_and_pred(image, inf_output, video_filename)
+
+            if cv2.waitKey(10) & 0xFF == ord('q'):
+                break
         # Release video capture
         cv2.destroyAllWindows()
         cap.release()

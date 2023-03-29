@@ -8,12 +8,11 @@ class CNNModel(nn.Module):
     def __init__(self):
         super(CNNModel, self).__init__()
 
-        self.conv1 = nn.Conv2d(17, 163, kernel_size=(3, 3), padding=(1, 1)) # prev kernel_size=(1, 3), padding=(0, 1)
-        self.conv2 = nn.Conv2d(163, 162, kernel_size=(3, 3), padding=(1, 1))
-        self.conv3 = nn.Conv2d(162, 235, kernel_size=(3, 3), padding=(1, 1))
-        # self.conv4 = nn.Conv2d(128, 128, kernel_size=(3, 3), padding=(1, 1))
-        self.pool = nn.MaxPool2d(kernel_size=(3, 3), stride=(1, 1), padding=(1, 1))
-        self.fc1 = nn.Linear(235 * 3, 256)
+        self.conv1 = nn.Conv2d(17, 50, kernel_size=(1, 3), padding=(0, 1)) # prev kernel_size=(1, 3), padding=(0, 1)
+        self.conv2 = nn.Conv2d(50, 50, kernel_size=(1, 3), padding=(0, 1))
+        self.conv3 = nn.Conv2d(50, 50, kernel_size=(1, 3), padding=(0, 1))
+        self.pool = nn.MaxPool2d(kernel_size=(1, 3), stride=(1, 1), padding=(0, 1))
+        self.fc1 = nn.Linear(50 * 3, 256)
         self.fc2 = nn.Linear(256, 4)
         self.relu = nn.ReLU()
 
@@ -22,8 +21,7 @@ class CNNModel(nn.Module):
         x = self.relu(self.conv1(x))
         x = self.pool(self.relu(self.conv2(x)))
         x = self.pool(self.relu(self.conv3(x)))
-        # x = self.pool(self.relu(self.conv4(x)))
-        x = x.view(-1, 235 * 3)
+        x = x.view(-1, 50 * 3)
         # print(x.shape)
 
         x = self.relu(self.fc1(x))
@@ -38,8 +36,7 @@ model.to(device)
 criterion = nn.CrossEntropyLoss()
 # criterion = nn.MSELoss()
 
-# learning_rate = 1e-3
-learning_rate = 0.00024149705692512547
+learning_rate = 1e-3
 
 # optimizer = torch.optim.SGD(model.parameters(), lr=learning_rate)
 optimizer = torch.optim.Adam(model.parameters(), lr=learning_rate)
@@ -49,8 +46,8 @@ if __name__ == "__main__":
     train_dataset = KeypointDataset("keypoints_norm17x3.pt", "labels_norm.pt")
 
     #data size is 49320
-    batch_size = int(90/3)
-    n_iters = int(1096*43*3)
+    batch_size = int(90)
+    n_iters = int(1096*100)
     num_epochs = n_iters / (len(train_dataset) / batch_size)
     num_epochs = int(num_epochs)
 
