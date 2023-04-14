@@ -30,12 +30,12 @@ for file in os.listdir(folder):
             labelid = 0
         elif label == "swim":
             labelid = 1
-        elif label == "misc":
-            labelid = 2
+        # elif label == "misc":
+        #     labelid = 2
         elif label == "idle":
-            labelid = 3
+            labelid = 2
 
-        scores = [0,0,0,0]
+        scores = [0,0,0]
         for i in range(len(test_data)):    
             frames = test_data[i].unsqueeze(0).to('cuda:0')
             # print(frames.shape)
@@ -65,8 +65,8 @@ import seaborn as sn
 import pandas as pd
 
 cm = confusion_matrix(label_list, scores_list, normalize='true') #normalize='true'
-df_cm = pd.DataFrame(cm, index = [i for i in ["drown", "swim", "misc", "idle"]],
-                    columns = [i for i in ["drown", "swim", "misc", "idle"]])
+df_cm = pd.DataFrame(cm, index = [i for i in ["drown", "swim", "idle"]],
+                    columns = [i for i in ["drown", "swim", "idle"]])
 plt.figure(figsize = (10,7))
 sn.heatmap(df_cm, annot=True) #, fmt='g'
 
