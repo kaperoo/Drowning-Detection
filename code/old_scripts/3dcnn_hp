@@ -1,8 +1,0 @@
-[I 2023-04-23 02:33:57,541] Trial 3 finished with value: 0.8042131350681536 and parameters: {
-    'learning_rate': 0.000319650177794424, 
-    'batch_size': 16, 
-    'num_epochs': 40, 
-    'conv1_channels': 103, 
-    'conv2_channels': 76, 
-    'conv3_channels': 82}
-    . Best is trial 3 with value: 0.8042131350681536.
