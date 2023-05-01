@@ -85,8 +85,8 @@ def draw_box_and_pred(image, pred, file, conf):
     boxcoords = xywh2xyxy(kpdisplay[:, 2:6])
     # colour = (0, 100, 0) if pred == labelid else (0, 0, 100)
     plot_one_box(boxcoords[0], nimg, label=str(inf_text + " " + str(conf)), color=colour, line_thickness=2)
-    cv2.imshow('frame', nimg)
-    cv2.waitKey(1)
+    
+    return nimg
 
 
 folder = [
@@ -117,8 +117,21 @@ for directory in folder:
         if not video_filename.endswith(".mp4"):
             continue
 
+        
+
         # Load video
         cap = cv2.VideoCapture(os.path.join(directory, video_filename))
+
+        #get size of the frames
+        if cap.get(cv2.CAP_PROP_FRAME_HEIGHT) == 1440:
+            hsize = 512
+        else:
+            hsize = 384
+                   
+
+        # save video
+        # fourcc = cv2.VideoWriter_fourcc(*'mp4v')
+        # out = cv2.VideoWriter(video_filename.split(".")[0]+'.mp4', fourcc, cap.get(cv2.CAP_PROP_FPS), (640, hsize))
         frame_buffer = []
         inf_output = None
         # Loop over video frames
@@ -228,7 +241,11 @@ for directory in folder:
 
             # # start measuring time for drawing
             # draw_start = time.time()
-            draw_box_and_pred(image, inf_output, video_filename, conf)
+            nimg = draw_box_and_pred(image, inf_output, video_filename, conf)
+            # cv2.imshow('frame', nimg)
+            print(nimg.shape)
+            cv2.waitKey(1)
+            # out.write(nimg)
             # # end measuring time for drawing
             # draw_end = time.time()
             
@@ -253,6 +270,7 @@ for directory in folder:
         # Release video capture
         cv2.destroyAllWindows()
         cap.release()
+        # out.release()
 
         total_time = total_time + fr
         print('Total changes: ', (total_change/total_time)*30)
