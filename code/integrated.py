@@ -4,15 +4,13 @@ from torchvision import transforms
 from os.path import dirname, join
 
 import sys
-sys.path.append(join(dirname(__file__), "../yolov7"))
+sys.path.append(join(dirname(__file__), "..\\yolov7"))
 
 from utils.datasets import letterbox
 from utils.general import non_max_suppression_kpt
-from utils.plots import output_to_keypoint, plot_skeleton_kpts
+from utils.plots import output_to_keypoint
 
-import matplotlib.pyplot as plt
 import cv2
-import numpy as np
 import os
 
 
@@ -51,16 +49,16 @@ def run_inference(image):
     return output
 
 folder = [
-        #   '../dataset/train/tr_underwater/tr_u_drown', 
-        #   '../dataset/train/tr_underwater/tr_u_swim', 
-        #   '../dataset/train/tr_underwater/tr_u_misc', 
-        #   '../dataset/train/tr_underwater/tr_u_idle',
-        #   '../dataset/train/tr_overhead/tr_o_drown',
-        #   '../dataset/train/tr_overhead/tr_o_swim',
-        #   '../dataset/train/tr_overhead/tr_o_misc',
-        #   '../dataset/train/tr_overhead/tr_o_idle'
-          '../dataset/test/te_underwater',
-          '../dataset/test/te_overhead'
+          '../dataset/train/tr_underwater/tr_u_drown', 
+          '../dataset/train/tr_underwater/tr_u_swim', 
+          '../dataset/train/tr_underwater/tr_u_misc', 
+          '../dataset/train/tr_underwater/tr_u_idle',
+          '../dataset/train/tr_overhead/tr_o_drown',
+          '../dataset/train/tr_overhead/tr_o_swim',
+          '../dataset/train/tr_overhead/tr_o_misc',
+          '../dataset/train/tr_overhead/tr_o_idle'
+        #   '../dataset/test/te_underwater',
+        #   '../dataset/test/te_overhead'
         ]
 
 # Loop over videos in the folder
@@ -78,7 +76,7 @@ for directory in folder:
     
         # Loop over video frames
         while True:        
-            os.system('cls' if os.name == 'nt' else 'clear')
+            # os.system('cls' if os.name == 'nt' else 'clear')
             print("Processing video:", video_filename)
             print("Frame:", cap.get(cv2.CAP_PROP_POS_FRAMES), "/", cap.get(cv2.CAP_PROP_FRAME_COUNT))
             # print video num out of total num
@@ -104,9 +102,10 @@ for directory in folder:
                 keypoints = output_to_keypoint(keypoints)
 
 
-
+            print(keypoints)
             # Convert keypoints to PyTorch tensor
             keypoints = torch.tensor(keypoints).float()
+            print(keypoints)
             # print(keypoints.shape)
             # print(keypoints.type())
 
@@ -138,12 +137,13 @@ for directory in folder:
                 elif idx % 3 == 1:
                     keypoints[idx] = point + ychange
 
-            # blank = np.zeros((384, 640, 3), np.uint8)
-            # for i in range(0, len(keypoints), 3):
-            #     cv2.circle(blank, (int(keypoints[i]), int(keypoints[i+1])), 3, (255, 0, 0), -1)
+            import numpy as np
+            blank = np.zeros((384, 640, 3), np.uint8)
+            for i in range(0, len(keypoints), 3):
+                cv2.circle(blank, (int(keypoints[i]), int(keypoints[i+1])), 3, (255, 0, 0), -1)
 
-            # cv2.imshow("frame", blank)
-            # cv2.waitKey(1)
+            cv2.imshow("frame", blank)
+            cv2.waitKey(1)
 
 
             # Save keypoints

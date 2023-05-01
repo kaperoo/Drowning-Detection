@@ -1,0 +1,66 @@
+Trial 0 finished with value: 0.9983765239232985 and parameters: {'learning_rate': 6.886198537827221e-05, 'batch_size': 16, 'num_epochs': 50, 'conv1_channels': 219, 'conv2_channels': 183, 'conv3_channels': 179, 'hidden_channels': 164, 'seq_len': 30, 'hidden_layers': 5}. Best is trial 0 with value: 0.9983765239232985.
+
+[I 2023-04-15 21:09:07,064] Trial 0 finished with value: 0.3864424431783373 and parameters: {'learning_rate': 0.0007688442407508926, 'batch_size': 64, 'num_epochs': 24, 'conv1_channels': 247, 'conv2_channels': 127, 'conv3_channels': 249, 'hidden_channels': 75, 'seq_len': 30, 'hidden_layers': 3}. Best is trial 0 with value: 0.3864424431783373.
+[I 2023-04-15 21:32:32,833] Trial 1 finished with value: 0.3828760411562959 and parameters: {'learning_rate': 0.007730724226316284, 'batch_size': 128, 'num_epochs': 41, 'conv1_channels': 252, 'conv2_channels': 93, 'conv3_channels': 176, 'hidden_channels': 105, 'seq_len': 5, 'hidden_layers': 3}. Best is trial 0 with value: 0.3864424431783373.
+[I 2023-04-15 21:51:21,494] Trial 2 finished with value: 0.3810264576188143 and parameters: {'learning_rate': 0.04052676043572774, 'batch_size': 128, 'num_epochs': 46, 'conv1_channels': 161, 'conv2_channels': 104, 'conv3_channels': 77, 'hidden_channels': 68, 'seq_len': 5, 'hidden_layers': 3}. Best is trial 0 with value: 0.3864424431783373.
+[I 2023-04-15 22:23:17,560] Trial 3 finished with value: 0.9736861447997059 and parameters: {'learning_rate': 1.969680842126925e-05, 'batch_size': 64, 'num_epochs': 31, 'conv1_channels': 140, 'conv2_channels': 178, 'conv3_channels': 244, 'hidden_channels': 90, 'seq_len': 15, 'hidden_layers': 2}. Best is trial 3 with value: 0.9736861447997059.
+[I 2023-04-15 23:42:40,574] Trial 4 finished with value: 0.9762073965161633 and parameters: {'learning_rate': 1.557953130057814e-05, 'batch_size': 32, 'num_epochs': 38, 'conv1_channels': 233, 'conv2_channels': 116, 'conv3_channels': 67, 'hidden_channels': 120, 'seq_len': 30, 'hidden_layers': 2}. Best is trial 4 with value: 0.9762073965161633.
+[I 2023-04-16 00:16:33,928] Trial 5 pruned.
+[I 2023-04-16 00:40:26,085] Trial 6 pruned.
+[I 2023-04-16 01:24:27,049] Trial 7 finished with value: 0.9814937318796194 and parameters: {'learning_rate': 5.9777405209457534e-05, 'batch_size': 128, 'num_epochs': 31, 'conv1_channels': 218, 'conv2_channels': 151, 'conv3_channels': 236, 'hidden_channels': 75, 'seq_len': 15, 'hidden_layers': 3}. Best is trial 7 with value: 0.9814937318796194.
+[I 2023-04-16 01:45:17,780] Trial 8 finished with value: 0.9829546150548172 and parameters: {'learning_rate': 6.573770184841558e-05, 'batch_size': 64, 'num_epochs': 22, 'conv1_channels': 195, 'conv2_channels': 134, 'conv3_channels': 114, 'hidden_channels': 113, 'seq_len': 10, 'hidden_layers': 3}. Best is trial 8 with value: 0.9829546150548172.
+[I 2023-04-16 01:47:03,700] Trial 9 pruned.
+[I 2023-04-16 02:18:20,557] Trial 10 finished with value: 0.9839835854719177 and parameters: {'learning_rate': 0.00021200101832180918, 'batch_size': 16, 'num_epochs': 20, 'conv1_channels': 180, 'conv2_channels': 233, 'conv3_channels': 171, 'hidden_channels': 128, 'seq_len': 10, 'hidden_layers': 4}. Best is trial 10 with value: 0.9839835854719177.
+[I 2023-04-16 02:49:13,554] Trial 11 finished with value: 0.9743614871072457 and parameters: {'learning_rate': 0.0002450930757307284, 'batch_size': 16, 'num_epochs': 20, 'conv1_channels': 181, 'conv2_channels': 229, 'conv3_channels': 168, 'hidden_channels': 127, 'seq_len': 10, 'hidden_layers': 4}. Best is trial 10 with value: 0.9839835854719177.
+[I 2023-04-16 03:12:02,823] Trial 12 finished with value: 0.9700067373063025 and parameters: {'learning_rate': 0.0001525288397750946, 'batch_size': 16, 'num_epochs': 20, 'conv1_channels': 103, 'conv2_channels': 59, 'conv3_channels': 125, 'hidden_channels': 107, 'seq_len': 10, 'hidden_layers': 4}. Best is trial 10 with value: 0.9839835854719177.
+[I 2023-04-16 03:39:36,014] Trial 13 finished with value: 0.9898572916028664 and parameters: {'learning_rate': 0.0001030065974614267, 'batch_size': 64, 'num_epochs': 27, 'conv1_channels': 190, 'conv2_channels': 256, 'conv3_channels': 196, 'hidden_channels': 127, 'seq_len': 10, 'hidden_layers': 4}. Best is trial 13 with value: 0.9898572916028664.
+[I 2023-04-16 03:40:57,442] Trial 14 pruned.
+[I 2023-04-16 03:42:25,839] Trial 15 pruned.
+[I 2023-04-16 03:44:29,863] Trial 16 pruned.
+[I 2023-04-16 03:47:56,672] Trial 17 pruned.
+[I 2023-04-16 03:48:33,639] Trial 18 pruned.
+[I 2023-04-16 05:06:59,364] Trial 19 finished with value: 0.9876779186832486 and parameters: {'learning_rate': 0.00016639642405904208, 'batch_size': 16, 'num_epochs': 23, 'conv1_channels': 121, 'conv2_channels': 236, 'conv3_channels': 184, 'hidden_channels': 100, 'seq_len': 30, 'hidden_layers': 4}. Best is trial 13 with value: 0.9898572916028664.
+[I 2023-04-16 07:32:55,657] Trial 20 finished with value: 0.9982335763442177 and parameters: {'learning_rate': 3.364962545328516e-05, 'batch_size': 16, 'num_epochs': 49, 'conv1_channels': 85, 'conv2_channels': 199, 'conv3_channels': 214, 'hidden_channels': 85, 'seq_len': 30, 'hidden_layers': 3}. Best is trial 20 with value: 0.9982335763442177.
+[I 2023-04-16 07:41:42,233] Trial 21 pruned.
+[I 2023-04-16 09:54:59,359] Trial 22 finished with value: 0.997998733892871 and parameters: {'learning_rate': 3.642936331423401e-05, 'batch_size': 16, 'num_epochs': 44, 'conv1_channels': 100, 'conv2_channels': 240, 'conv3_channels': 219, 'hidden_channels': 84, 'seq_len': 30, 'hidden_layers': 3}. Best is trial 20 with value: 0.9982335763442177.
+[I 2023-04-16 14:18:26,004] Trial 23 pruned.
+[I 2023-04-16 16:38:29,892] Trial 24 finished with value: 0.9984234924135678 and parameters: {'learning_rate': 3.564548037116001e-05, 'batch_size': 16, 'num_epochs': 45, 'conv1_channels': 86, 'conv2_channels': 218, 'conv3_channels': 227, 'hidden_channels': 63, 'seq_len': 30, 'hidden_layers': 3}. Best is trial 24 with value: 0.9984234924135678.
+[I 2023-04-16 18:45:28,552] Trial 25 finished with value: 0.998300965917213 and parameters: {'learning_rate': 3.786558494968425e-05, 'batch_size': 16, 'num_epochs': 45, 'conv1_channels': 86, 'conv2_channels': 215, 'conv3_channels': 232, 'hidden_channels': 58, 'seq_len': 30, 'hidden_layers': 3}. Best is trial 24 with value: 0.9984234924135678.
+[I 2023-04-16 20:58:31,040] Trial 26 finished with value: 0.9983989871142968 and parameters: {'learning_rate': 5.958846977781312e-05, 'batch_size': 16, 'num_epochs': 46, 'conv1_channels': 81, 'conv2_channels': 164, 'conv3_channels': 256, 'hidden_channels': 52, 'seq_len': 30, 'hidden_layers': 3}. Best is trial 24 with value: 0.9984234924135678.
+[I 2023-04-16 21:41:38,562] Trial 27 pruned.
+[I 2023-04-16 23:46:23,636] Trial 28 finished with value: 0.9975882701300823 and parameters: {'learning_rate': 6.38734365538016e-05, 'batch_size': 16, 'num_epochs': 37, 'conv1_channels': 76, 'conv2_channels': 162, 'conv3_channels': 229, 'hidden_channels': 60, 'seq_len': 30, 'hidden_layers': 3}. Best is trial 24 with value: 0.9984234924135678.
+[I 2023-04-16 23:49:20,963] Trial 29 pruned.
+[I 2023-04-17 01:50:18,690] Trial 30 finished with value: 0.9978905021544242 and parameters: {'learning_rate': 0.00011034722033256506, 'batch_size': 32, 'num_epochs': 46, 'conv1_channels': 115, 'conv2_channels': 187, 'conv3_channels': 242, 'hidden_channels': 68, 'seq_len': 30, 'hidden_layers': 3}. Best is trial 24 with value: 0.9984234924135678.
+[I 2023-04-17 01:53:20,987] Trial 31 pruned.
+[I 2023-04-17 03:44:47,012] Trial 32 pruned.
+[I 2023-04-17 03:47:03,500] Trial 33 pruned.
+[I 2023-04-17 03:48:00,086] Trial 34 pruned.
+[I 2023-04-17 03:50:32,904] Trial 35 pruned.
+[I 2023-04-17 03:56:32,168] Trial 36 pruned.
+[I 2023-04-17 03:59:32,878] Trial 37 pruned.
+[I 2023-04-17 04:00:15,692] Trial 38 pruned.
+[I 2023-04-17 04:02:01,124] Trial 39 pruned.
+[I 2023-04-17 04:03:48,152] Trial 40 pruned.
+[I 2023-04-17 06:01:29,148] Trial 41 pruned.
+[I 2023-04-17 07:58:02,791] Trial 42 pruned.
+[I 2023-04-17 10:13:00,828] Trial 43 pruned.
+[I 2023-04-17 10:29:52,273] Trial 44 pruned.
+[I 2023-04-17 11:16:36,152] Trial 45 pruned.
+[I 2023-04-17 11:19:06,245] Trial 46 pruned.
+[I 2023-04-17 12:48:39,999] Trial 47 pruned.
+[I 2023-04-17 14:45:25,896] Trial 48 pruned.
+[I 2023-04-17 14:45:44,924] Trial 49 pruned.
+[I 2023-04-17 14:46:32,949] Trial 50 pruned.
+
+
+
+[I 2023-04-16 16:38:29,892] Trial 24 finished with value: 0.9984234924135678 and parameters: {
+    'learning_rate': 3.564548037116001e-05, 
+    'batch_size': 16, 
+    'num_epochs': 45, 
+    'conv1_channels': 86, 
+    'conv2_channels': 218, 
+    'conv3_channels': 227, 
+    'hidden_channels': 63, 
+    'seq_len': 30, 
+    'hidden_layers': 3}. Best is trial 24 with value: 0.9984234924135678.

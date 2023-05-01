@@ -2,18 +2,18 @@
 # and plots the confusion matrix
 import torch
 from torch import load
-from cnnmodel import CNNModel
+from cnn import CNNModel
 # from crnnmodel import CNNModel
 import os
 import matplotlib.pyplot as plt
 import numpy as np
 
-folder = "/home/kacperroemer/Code/FYP/keypoints_test_norm"
+folder = "C:\\Users\\User\\Desktop\\Code\\FYP\\keypoints_test_norm"
 
 # use model to predict
 model = CNNModel().to('cuda:0')
 
-with open('model_state.pt', 'rb') as f: 
+with open('model_state_cnn.pt', 'rb') as f: 
     model.load_state_dict(load(f))
     
 scores_list = []
@@ -58,6 +58,19 @@ for file in os.listdir(folder):
             predicted = "false"
 
         print(f"{label:7} {predicted:8} {accuracy:.2f} {scores}")
+
+# calculate accuracy of the model
+correct = 0
+for i in range(len(scores_list)):
+    if scores_list[i] == label_list[i]:
+        correct += 1
+
+print(f"Accuracy: {correct/len(scores_list):.2f}")
+
+# calculate the precision, recall and f1 score
+from sklearn.metrics import precision_recall_fscore_support
+precision, recall, f1, _ = precision_recall_fscore_support(label_list, scores_list, average='macro')
+print(f"Precision: {precision:.2f} Recall: {recall:.2f} F1: {f1:.2f}")
 
 # plot the confusion matrix of the predictions
 from sklearn.metrics import confusion_matrix

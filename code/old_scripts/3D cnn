@@ -1,0 +1,26 @@
+drown   correct  0.89 [180, 23, 0]
+drown   false    0.28 [90, 208, 20]
+drown   false    0.12 [30, 212, 3]
+drown   correct  0.44 [99, 83, 44]
+idle    correct  0.63 [47, 132, 306]
+idle    correct  0.97 [19, 36, 1755]
+swim    correct  0.40 [54, 60, 36]
+swim    correct  0.79 [42, 263, 30]
+swim    correct  0.68 [65, 153, 8]
+drown   correct  0.53 [186, 94, 69]
+drown   false    0.17 [31, 94, 57]
+drown   correct  0.51 [106, 24, 77]
+drown   correct  0.72 [152, 8, 52]
+drown   correct  0.72 [157, 8, 52]
+drown   correct  0.69 [220, 78, 22]
+idle    correct  0.76 [77, 91, 546]
+idle    correct  0.61 [482, 86, 876]
+idle    false    0.24 [2, 11, 4]
+idle    false    0.31 [276, 60, 153]
+swim    correct  0.57 [145, 203, 8]
+swim    correct  0.88 [9, 98, 4]
+swim    correct  0.63 [50, 238, 88]
+Accuracy: 0.66
+Precision: 0.60 
+Recall: 0.63 
+F1: 0.61

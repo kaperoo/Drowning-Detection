@@ -1,0 +1,10 @@
+Best trial:
+  Value: 0.9984234924135678
+  Params:
+    learning_rate: 3.564548037116001e-05
+    batch_size: 16
+    num_epochs: 45
+    conv1_channels: 86
+    conv2_channels: 218
+    conv3_channels: 227
+    seq_len: 30 

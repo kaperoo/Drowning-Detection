@@ -5,7 +5,7 @@ import pandas as pd
 import torch
 from torch.utils.data import Dataset, DataLoader
 
-folder = "/home/kacperroemer/Code/FYP/code"
+folder = "C:\\Users\\User\\Desktop\\Code\\FYP\\code"
 
 class KeypointDataset(Dataset):
     def __init__(self, annotations_file, keypoint_file, transform=True, target_transform=True):

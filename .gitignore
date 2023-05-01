@@ -4,3 +4,11 @@ dataset*
 nntest
 code/data
 __pycache__
+kptlbl
+model_scripts
+keypoints*/*
+te_u_idle_3.mp4*
+other/*
+kptlbl/*
+old_scripts/*
+saved_models/*
