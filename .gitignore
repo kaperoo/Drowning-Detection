@@ -13,3 +13,9 @@ other
 kptlbl/*
 old_scripts/*
 saved_models/*
+videos
+figures/flawed*
+figures/swimming*
+figures/drowning*
+figures/idle*
+figures/yolo*
