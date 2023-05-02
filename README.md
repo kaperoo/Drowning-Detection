@@ -1,5 +1,5 @@
 # Neural Network-Based Drowning Detection System
-University of Leeds Final Year Project - Kacper Roemer
+## University of Leeds Final Year Project - Kacper Roemer
 This is the code for the drowning detection system proposed in the report.
 
 To install the required libraries do:
