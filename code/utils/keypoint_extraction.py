@@ -1,10 +1,10 @@
-# PURPOSE: extract keypoints from dataset
+# PURPOSE: extract keypoints from dataset with YOLOv7
 import torch
 from torchvision import transforms
 from os.path import dirname, join
 
 import sys
-sys.path.append(join(dirname(__file__), "..\\yolov7"))
+sys.path.append(join(dirname(__file__), "..\\..\\yolov7"))
 
 from utils.datasets import letterbox
 from utils.general import non_max_suppression_kpt
@@ -12,13 +12,16 @@ from utils.plots import output_to_keypoint
 
 import cv2
 import os
+import numpy as np
 
 
-# Load YOLOv7 model
+# find the device available
 device = torch.device("cuda:0" if torch.cuda.is_available() else "cpu")
-# print(device)
 
+# define a function to load the model
 def load_model():
+
+    # load the model
     model = torch.load(join(dirname(__file__), "../yolov7/yolov7-w6-pose.pt"), map_location=device)['model']
     # Put in inference mode
     model.float().eval()
@@ -30,24 +33,28 @@ def load_model():
         model.half().to(device)
     return model
 
+# load the model
 model = load_model()
 
 # inference function
 def run_inference(image):
-    # Resize and pad image
-    # print(image.shape)
-    image = letterbox(image, new_shape = (640), stride=64, auto=True)[0] # shape: (567, 960, 3)
-    # print(image.shape) # 384x640
+    # Resize and pad image for faster inference
+    image = letterbox(image, new_shape = (640), stride=64, auto=True)[0]
+
     # Apply transforms
     image = transforms.ToTensor()(image) 
     if torch.cuda.is_available():
         image = image.half().to(device)
+
     # Turn image into batch
     image = image.unsqueeze(0)
+
+    # Run inference
     with torch.no_grad():
         output, _ = model(image)
     return output
 
+# define the folder to be processed
 folder = [
           '../dataset/train/tr_underwater/tr_u_drown', 
           '../dataset/train/tr_underwater/tr_u_swim', 
@@ -61,8 +68,7 @@ folder = [
         #   '../dataset/test/te_overhead'
         ]
 
-# Loop over videos in the folder
-# for directory in os.listdir(folder):
+# Loop over videos in the folders
 for directory in folder:
     for video_filename in os.listdir(os.path.join(directory)):
         if not video_filename.endswith(".mp4"):
@@ -76,21 +82,22 @@ for directory in folder:
     
         # Loop over video frames
         while True:        
-            # os.system('cls' if os.name == 'nt' else 'clear')
+            # print progress
+            os.system('cls' if os.name == 'nt' else 'clear')
             print("Processing video:", video_filename)
             print("Frame:", cap.get(cv2.CAP_PROP_POS_FRAMES), "/", cap.get(cv2.CAP_PROP_FRAME_COUNT))
-            # print video num out of total num
             print("Video:", os.listdir(directory).index(video_filename) + 1, "/", len(os.listdir(directory)))
 
+            # Read frame
             ret, frame = cap.read()
             if not ret:
                 break
 
-            # Run YOLOv7 on the frame
+            # apply color conversion and run inference on frame
             frame = cv2.cvtColor(frame, cv2.COLOR_BGR2RGB)
             output = run_inference(frame)
 
-            # Extract keypoints from the output
+            # Extract keypoints from the output by applying non-max suppression
             keypoints = []
             keypoints = non_max_suppression_kpt(output, 
                                         0.25, # Confidence Threshold
@@ -98,31 +105,22 @@ for directory in folder:
                                         nc=model.yaml['nc'], # Number of Classes
                                         nkpt=model.yaml['nkpt'], # Number of Keypoints
                                         kpt_label=True)
+
+            # Convert output to keypoints
             with torch.no_grad():
                 keypoints = output_to_keypoint(keypoints)
 
 
-            print(keypoints)
             # Convert keypoints to PyTorch tensor
             keypoints = torch.tensor(keypoints).float()
-            print(keypoints)
-            # print(keypoints.shape)
-            # print(keypoints.type())
 
-            # if more than one person is detected, take the one with the highest confidence
-            # if keypoints.shape[0] > 1:
-            #     # keep only the keypoints of the person with the highest confidence
-            #     keypoints = keypoints[torch.argmax(keypoints[:, 6]), 7:]
-            # elif keypoints.shape[0] == 1:
-            #     keypoints = keypoints[0, 7:]
-            # else:
-            #     continue
-
+            # keep only the keypoints of the person with the highest confidence
             if keypoints.shape[0] > 1:
-                # keep only the keypoints of the person with the highest confidence
                 keypoints = keypoints[torch.argmax(keypoints[:, 6]), :]
+            # if only one set of keypoints is detected, keep them
             elif keypoints.shape[0] == 1:
                 keypoints = keypoints[0, :]
+            # if no keypoints are detected, skip frame
             else:
                 continue
 
@@ -130,20 +128,22 @@ for directory in folder:
             xchange = 640/2 - keypoints[2]
             ychange = 384/2 - keypoints[3]
 
+            # get rid of the first 7 elements of the keypoints tensor
             keypoints = keypoints[7:]
+            # normalize keypoints to the center of the image
             for idx, point in enumerate(keypoints):
                 if idx % 3 == 0:
                     keypoints[idx] = point + xchange
                 elif idx % 3 == 1:
                     keypoints[idx] = point + ychange
 
-            import numpy as np
-            blank = np.zeros((384, 640, 3), np.uint8)
-            for i in range(0, len(keypoints), 3):
-                cv2.circle(blank, (int(keypoints[i]), int(keypoints[i+1])), 3, (255, 0, 0), -1)
+            ## Uncomment for keypoints visualization
+            # blank = np.zeros((384, 640, 3), np.uint8)
+            # for i in range(0, len(keypoints), 3):
+            #     cv2.circle(blank, (int(keypoints[i]), int(keypoints[i+1])), 3, (255, 0, 0), -1)
 
-            cv2.imshow("frame", blank)
-            cv2.waitKey(1)
+            # cv2.imshow("frame", blank)
+            # cv2.waitKey(1)
 
 
             # Save keypoints
@@ -154,7 +154,6 @@ for directory in folder:
 
         # Convert list to PyTorch tensor
         keypoints_tensor = torch.stack(keypoints_list)
-        print("tensor shape", keypoints_tensor.shape)
 
 
         # Save keypoints to file

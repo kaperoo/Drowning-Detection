@@ -2,27 +2,32 @@
 # and plots the confusion matrix
 import torch
 from torch import load
-from baseline import NeuralNetwork
-# from crnnmodel import CNNModel
+import sys
+sys.path.append("..\\models")
+from cnnsingle import CNNSINGLE
 import os
 import matplotlib.pyplot as plt
 
-folder = "C:\\Users\\User\\Desktop\\Code\\FYP\\keypoints_test_norm"
+folder = "..\\datasets\\keypoints_test_norm"
 
-# use model to predict
-model = NeuralNetwork().to('cuda:0')
+# load the model on the GPU
+model = CNNSINGLE().to('cuda:0')
 
-with open('model_baseline.pt', 'rb') as f: 
+# load the model weights
+with open('model_state_cnn.pt', 'rb') as f: 
     model.load_state_dict(load(f))
     
+# loop over the test data and predict the class
 scores_list = []
 label_list = []
 
 for file in os.listdir(folder):
     if file.endswith(".pt"):
         
+        # load the data
         test_data = torch.load(os.path.join(folder, file))
 
+        # get the label from the file name
         label = file.split("_")[2]
         labelid = 4
         if label == "drown":
@@ -32,28 +37,33 @@ for file in os.listdir(folder):
         elif label == "idle":
             labelid = 2
 
+        # predict the class for each frame in the video
         scores = [0,0,0]
         for i in range(len(test_data)):    
+            # prepare the data for the model
             frames = test_data[i].unsqueeze(0).to('cuda:0')
-            # print(frames.shape)
-            # frames = frames.reshape(1, 17, 1, 3)
+            # predict the class
             outputs = torch.argmax(model(frames))
+            # save the prediction and the label
             scores_list.append(outputs.cpu().detach().numpy())
             label_list.append(labelid)
             scores[outputs] += 1
 
 
+        # calculate the accuracy on the video
         accuracy = scores[labelid] / sum(scores)
 
         # find index of max score
         max_score = max(scores)
         max_index = scores.index(max_score)
 
+        # check if the prediction for whole video is correct
         if max_index == labelid:
             predicted = "correct"
         else:
             predicted = "false"
 
+        # print the results
         print(f"{label:7} {predicted:8} {accuracy:.2f} {scores}")
 
 # calculate accuracy of the model

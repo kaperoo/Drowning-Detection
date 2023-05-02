@@ -1,12 +1,14 @@
-# PURPOSE: Display inference visually
+# PURPOSE: Final Integrated System for Drowning Detection with Baseline model
 import torch
 from torchvision import transforms
 from os.path import dirname, join
 
-from baseline import NeuralNetwork
 
 import sys
-sys.path.append(join(dirname(__file__), "..\\yolov7"))
+sys.path.append(join(dirname(__file__), "..\\..\\yolov7"))
+sys.path.append(join(dirname(__file__), "..\\models"))
+
+from baseline import Baseline
 
 from utils.datasets import letterbox
 from utils.general import non_max_suppression_kpt, xywh2xyxy
@@ -16,12 +18,11 @@ import cv2
 import numpy as np
 import os
 
-import time
 
-# Load YOLOv7 model
+# Load YOLOv7 model on GPU
 device = torch.device("cuda:0" if torch.cuda.is_available() else "cpu")
-print(device)
 
+# Load the yolo model
 def load_model():
     model = torch.load(join(dirname(__file__), "..\\yolov7\\yolov7-w6-pose.pt"), map_location=device)['model']
     # Put in inference mode
@@ -38,32 +39,24 @@ model = load_model()
 
 # inference function
 def run_inference(image):
-    # Resize and pad image
-    # print(image.shape)
-    image = letterbox(image, new_shape = (640), stride=64, auto=True)[0] # shape: (567, 960, 3)
-    # print(image.shape) # 384x640
+    # Resize and pad image for faster inference
+    image = letterbox(image, new_shape = (640), stride=64, auto=True)[0]
     # Apply transforms
     image = transforms.ToTensor()(image) 
     if torch.cuda.is_available():
         image = image.half().to(device)
     # Turn image into batch
     image = image.unsqueeze(0)
+    # Run inference
     with torch.no_grad():
         output, _ = model(image)
     return output, image
 
 def draw_box_and_pred(image, pred, file, conf):
 
-    label = file.split("_")[2]
-    labelid = 4
+    # set the colour of the bounding box
+    # also set the label text
     colour = (100, 100, 100)
-    if label == "drown":
-        labelid = 0
-    elif label == "swim":
-        labelid = 1
-    elif label == "idle":
-        labelid = 2
-
     if pred == 0:
         inf_text = 'drowning'
         colour = (0, 0, 100)
@@ -74,40 +67,33 @@ def draw_box_and_pred(image, pred, file, conf):
         inf_text = 'idle'
         colour = (0, 100, 100)
 
+    # prepare the image for display
     nimg = image[0].permute(1, 2, 0) * 255
     nimg = nimg.cpu().numpy().astype(np.uint8)
     nimg = cv2.cvtColor(nimg, cv2.COLOR_RGB2BGR)
-    # for idx in range(kpdisplay.shape[0]):
-    #     plot_skeleton_kpts(nimg, kpdisplay[idx, 7:].T, 3)
-    
+
+    # get the bounding box coordinates    
     boxcoords = xywh2xyxy(kpdisplay[:, 2:6])
-    # colour = (0, 100, 0) if pred == labelid else (0, 0, 100)
+    # draw the bounding box and label
     plot_one_box(boxcoords[0], nimg, label=str(inf_text + " " + str(conf)), color=colour, line_thickness=2)
+    
+    # display the image
     cv2.imshow('frame', nimg)
     cv2.waitKey(1)
 
 
+# define the folder with input footage
 folder = [
-        #   '../dataset/train/tr_underwater/tr_u_drown', 
-        #   '../dataset/train/tr_underwater/tr_u_swim', 
-        #   '../dataset/train/tr_underwater/tr_u_misc', 
-        #   '../dataset/train/tr_underwater/tr_u_idle',
-        #   '../dataset/train/tr_overhead/tr_o_drown',
-        #   '../dataset/train/tr_overhead/tr_o_swim',
-        #   '../dataset/train/tr_overhead/tr_o_misc',
-        #   '../dataset/train/tr_overhead/tr_o_idle'
           '..\\dataset\\test\\te_underwater',
           '..\\dataset\\test\\te_overhead'
         ]
 
-cnnmodel = NeuralNetwork().to('cuda:0')
+# load the baseline model
+cnnmodel = Baseline().to('cuda:0')
 with open('model_baseline.pt', 'rb') as f:
     cnnmodel.load_state_dict(torch.load(f))
 
 # Loop over videos in the folder
-# for directory in os.listdir(folder):
-total_change = 0
-total_time = 0
 for directory in folder:
     for video_filename in os.listdir(os.path.join(directory)):
         if not video_filename.endswith(".mp4"):
@@ -118,22 +104,18 @@ for directory in folder:
     
         # Loop over video frames
         fr = 0
-        # times = [0,0,0,0,0]
-        prev_class = -1
         while True:      
             fr += 1  
             ret, frame = cap.read()
             if not ret:
                 break
 
-            # # start measuring time for yolo inference
-            # yolo_start = time.time()
-
             # Run YOLOv7 on the frame
             frame = cv2.cvtColor(frame, cv2.COLOR_BGR2RGB)
             output, image = run_inference(frame)
 
             # Extract keypoints from the output
+            # and perform non-max suppression
             keypoints = []
             keypoints = non_max_suppression_kpt(output, 
                                         0.25, # Confidence Threshold
@@ -141,25 +123,24 @@ for directory in folder:
                                         nc=model.yaml['nc'], # Number of Classes
                                         nkpt=model.yaml['nkpt'], # Number of Keypoints
                                         kpt_label=True)
+
+            # get the keypoints for display
             with torch.no_grad():
                 keypoints = output_to_keypoint(keypoints)
-
-            # # end measuring time for yolo inference
-            # yolo_end = time.time()
-
-            # # start measuring time for data preprocessing
-            # data_start = time.time()
 
             # Convert keypoints to PyTorch tensor
             keypoints = torch.tensor(keypoints).float()
 
+            # clone the keypoints to keep the first 7 values
             kpdisplay = keypoints.clone()
 
+            # keep only the keypoints with the highest confidence
             if keypoints.shape[0] > 1:
-                # keep only the keypoints of the person with the highest confidence
                 keypoints = keypoints[torch.argmax(keypoints[:, 6]), :]
+            # if only one set of keypoints, keep them
             elif keypoints.shape[0] == 1:
                 keypoints = keypoints[0, :]
+            # if no keypoints, continue to next frame
             else:
                 continue
 
@@ -167,21 +148,19 @@ for directory in folder:
             xchange = 640/2 - keypoints[2]
             ychange = 384/2 - keypoints[3]
 
+            # get rid of the first 7 values
             keypoints = keypoints[7:]
+            # normalize the keypoints
             for idx, point in enumerate(keypoints):
                 if idx % 3 == 0:
                     keypoints[idx] = point + xchange
                 elif idx % 3 == 1:
                     keypoints[idx] = point + ychange
 
-            # # end measuring time for data preprocessing
-            # data_end = time.time()
-
-            # # start measuring time for cnn inference
-            # cnn_start = time.time()
-
+            # predict the class of the keypoints
             pred = cnnmodel(keypoints.unsqueeze(0).to('cuda:0'))
 
+            # get the class of the prediction
             inf_output = torch.argmax(pred)
             # get the confidence of the prediction
             softmax = torch.nn.functional.softmax(pred, dim=1)
@@ -189,44 +168,12 @@ for directory in folder:
             # round confidence to 2 decimal places
             conf = round(conf, 2)
 
-            if fr == 1:
-                prev_class = inf_output
-            elif inf_output != prev_class:
-                prev_class = inf_output
-                total_change += 1
-
-            # # end measuring time for cnn inference
-            # cnn_end = time.time()
-
-            # # start measuring time for drawing
-            # draw_start = time.time()
+            # draw the bounding box and label
             draw_box_and_pred(image, inf_output, video_filename, conf)
-
-            # # end measuring time for drawing
-            # draw_end = time.time()
-
-            # times[0] += yolo_end - yolo_start
-            # times[1] += data_end - data_start
-            # times[2] += cnn_end - cnn_start
-            # times[3] += draw_end - draw_start
-            # times[4] += draw_end - yolo_start
-            
-            ## print the average time for each step
-            # if fr % 30 == 0:
-            #     print('\nYolo inference time: ', times[0])
-            #     print('Data preprocessing time: ', times[1])
-            #     print('CNN inference time: ', times[2])
-            #     print('Drawing time: ', times[3])
-            #     print('Total time: ', times[4])
-            #     print('FPS: ', 1/(times[4]/30))
-            #     times = [0,0,0,0,0]
 
             if cv2.waitKey(10) & 0xFF == ord('q'):
                 break
+
         # Release video capture
         cv2.destroyAllWindows()
         cap.release()
-
-        total_time = total_time + fr
-        print('Total changes: ', (total_change/total_time)*30)
-        print('Avg time of class', total_time/total_change)

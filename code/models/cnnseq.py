@@ -1,56 +1,63 @@
-# Purpose: CNN model for keypoint classification
-# classifies 17x3 keypoint data into 4 classes: drown, swim, misc, idle
+# Purpose: CNNSEQ model for keypoint classification
+# classifies 17x3 keypoint data into 3 classes: drown, swim, idle
 import torch
 import torch.nn as nn
-from readrnn import KeypointDataset
+import sys
+sys.path.append("..\\datasets")
+from datasetseq import KeypointDataset
 from torch import nn, save
 
-class CNNModel(nn.Module):
+# Define CNNSEQ model
+class CNNSEQ(nn.Module):
     def __init__(self):
-        super(CNNModel, self).__init__()
-        self.conv1 = nn.Conv2d(17, 86, kernel_size=(3, 3), padding=(1, 1)) # prev kernel_size=(1, 3), padding=(0, 1)
+        super(CNNSEQ, self).__init__()
+
+        # 3 convolutional layers with ReLU activations
+        self.conv1 = nn.Conv2d(17, 86, kernel_size=(3, 3), padding=(1, 1))
         self.conv2 = nn.Conv2d(86, 218, kernel_size=(3, 3), padding=(1, 1))
         self.conv3 = nn.Conv2d(218, 227, kernel_size=(3, 3), padding=(1, 1))
-        # self.conv4 = nn.Conv2d(128, 128, kernel_size=(3, 3), padding=(1, 1))
-        self.pool = nn.MaxPool2d(kernel_size=(3, 3), stride=(1, 1), padding=(1, 1))
         self.relu = nn.ReLU()
 
-        # Modify the fully connected layers
+        # Fully connected layers for 3 class output
         self.fc1 = nn.Linear(227*3, 256)
         self.fc2 = nn.Linear(256, 3)
 
 
     def forward(self, x):
+        # find the batch size, sequence length, and image size
         batch_size, seq_len, c, h, w = x.size()
 
-        # Initializing hidden state for first input using method defined below
+        # reshape the input to be (batch_size * seq_len, c, h, w)
         x = x.view(batch_size * seq_len, c, h, w)
+
+        # forward pass through the convolutional layers
         x = self.relu(self.conv1(x))
-        x = self.pool(self.relu(self.conv2(x)))
-        x = self.pool(self.relu(self.conv3(x)))
+        x = self.relu(self.conv2(x))
+        x = self.relu(self.conv3(x))
+        # reshape the output to be (batch_size, seq_len, c*h*w)
         x = x.view(batch_size, seq_len, -1)
         
-        # Use the last output of the LSTM
+        # forward pass through the fully connected layers for final output
         x = self.relu(self.fc1(x))
         x = self.fc2(x)
         return x
 
-model = CNNModel()
-
+# load the model into the GPU if available
+model = CNNSEQ()
 device = torch.device("cuda:0" if torch.cuda.is_available() else "cpu")
 model.to(device)
 
+# Loss and optimizer
 criterion = nn.CrossEntropyLoss()
-
-# learning_rate = 1e-3
 learning_rate = 3.564548037116001e-05
-
 optimizer = torch.optim.Adam(model.parameters(), lr=learning_rate)
 
 if __name__ == "__main__":
+    # Load the dataset
     seq_len = 30
     train_dataset = KeypointDataset("keypoints_norm17x3_no_misc.pt", "labels_norm_no_misc.pt", seq_length=seq_len)
 
+    # Hyperparameters
     batch_size = 16
     num_epochs = 45
 
@@ -58,17 +65,17 @@ if __name__ == "__main__":
                                                 batch_size=batch_size,
                                                 shuffle=True)
 
+    # Train loop
     for epoch in range(num_epochs):
         runnung_loss = 0.0
         for i, (labels, images) in enumerate(train_loader):
+            
             # Load images as a torch tensor with gradient accumulation abilities
             images = images.requires_grad_().to(device)
             labels = labels.to(device)
 
-            # make input channel = 1
-            # print(images.shape)
+            # Add a channel dimension to the images
             images = images.unsqueeze(-1)
-            # print(images.shape)
 
             # Clear gradients w.r.t. parameters
             optimizer.zero_grad()
@@ -82,14 +89,14 @@ if __name__ == "__main__":
             # Getting gradients w.r.t. parameters
             loss.backward()
 
-            runnung_loss += loss.item()
-
             # Updating parameters
             optimizer.step()
 
+            # Print statistics
+            runnung_loss += loss.item()
             if i % 100 == 9:
                 print("Epoch: ", epoch, "Loss: ", runnung_loss/10)
                 runnung_loss = 0.0
-                
-    with open('model_state_seq.pt', 'wb') as f: 
+    # Save the model       
+    with open('model_cnnseq.pt', 'wb') as f: 
         save(model.state_dict(), f) 

@@ -1,6 +1,6 @@
 yolov7
 FYPVE
-dataset*
+dataset/*
 nntest
 code/data
 __pycache__
@@ -19,3 +19,4 @@ figures/swimming*
 figures/drowning*
 figures/idle*
 figures/yolo*
+code/old

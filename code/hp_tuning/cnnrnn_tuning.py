@@ -1,43 +1,49 @@
-# Purpose: CNN model for keypoint classification
-# classifies 17x3 keypoint data into 4 classes: drown, swim, misc, idle
+# Purpose: Tune hyperparameters for CNNRNN model
 import torch
 import torch.nn as nn
-from readrnntest import KeypointDataset
+import sys
+sys.path.append("..\\datasets")
+from datasetrnn import KeypointDataset
 from torch import nn
 import optuna
 
-
-class CNNModel(nn.Module):
-    def __init__(self, conv1_channels, conv2_channels, conv3_channels, hidden_channels, hidden_layers):
-        super(CNNModel, self).__init__()
+# Define CNNRNN model
+class CNNRNN(nn.Module):
+    def __init__(self, conv1_channels, conv2_channels, 
+                    conv3_channels, hidden_channels, hidden_layers):
+        
+        super(CNNRNN, self).__init__()
+        
+        # hyperparameters for GRU layer
         self.hidden_size = hidden_channels
         self.num_layers = hidden_layers
+
+        # CNN block
         self.cnn = nn.Sequential(
-            nn.Conv2d(17, conv1_channels, kernel_size=(3, 3), padding=(1, 1)), # prev kernel_size=(1, 3), padding=(0, 1)
-            nn.MaxPool2d(kernel_size=(3, 3), stride=(1, 1), padding=(1, 1)),
+            # 17 input channels (17 keypoints), 3 CNN layers with ReLU activation
+            nn.Conv2d(17, conv1_channels, kernel_size=(3, 3), padding=(1, 1)),
             nn.ReLU(),
             nn.Conv2d(conv1_channels, conv2_channels, kernel_size=(3, 3), padding=(1, 1)),
-            nn.MaxPool2d(kernel_size=(3, 3), stride=(1, 1), padding=(1, 1)),
             nn.ReLU(),
             nn.Conv2d(conv2_channels, conv3_channels, kernel_size=(3, 3), padding=(1, 1)),
-            nn.MaxPool2d(kernel_size=(3, 3), stride=(1, 1), padding=(1, 1)),
             nn.ReLU(),
-            # nn.Linear(227*3, 256),
-            # nn.Linear(256, 3)
         )
-        # Add an LSTM layer
-        self.lstm = nn.GRU(input_size=conv3_channels * 3, hidden_size=self.hidden_size, num_layers=self.num_layers, batch_first=True)
 
-        # Modify the fully connected layers
+        # Recurrent block
+        self.gru = nn.GRU(input_size=conv3_channels * 3, hidden_size=self.hidden_size, 
+                            num_layers=self.num_layers, batch_first=True)
+
+        # Fully connected layers for classification
         self.fc1 = nn.Linear(self.hidden_size, 256)
         self.fc2 = nn.Linear(256, 3)
 
 
     def forward(self, x):
+
+        # find the batch size, sequence length, and image size
         batch_size, seq_len, c, h, w = x.size()
 
-        # Initializing hidden state for first input using method defined below
-
+        # Loop through sequence
         ii = 0
         y = self.cnn(x[:,ii])
         y = y.view(batch_size, -1)
@@ -47,12 +53,16 @@ class CNNModel(nn.Module):
             y = self.cnn(x[:,ii])
             y = y.view(batch_size, -1)
             out, hidden = self.lstm(y.unsqueeze(1),hidden)
+
+        # Process the final hidden state to return the classification result
         out = self.fc1(out)
         out = self.fc2(out)
         return out
-    
+
+# get the available device
 device = torch.device("cuda:0" if torch.cuda.is_available() else "cpu")
 
+# Define the objective function to optimize hyperparameters
 def objective(trial):
     # Define hyperparameters to optimize
     lr = trial.suggest_loguniform('learning_rate', 1e-5, 1e-1)
@@ -64,7 +74,8 @@ def objective(trial):
     hidden_channels = trial.suggest_int('hidden_channels', 50, 128)
     hidden_layers = trial.suggest_int('hidden_layers', 2, 4)
 
-    train_dataset = KeypointDataset("C:\\Users\\User\\Desktop\\Code\\FYP\\keypoints_30")
+    # Define training and validation data loaders
+    train_dataset = KeypointDataset("..\\keypoints_30")
     train_size = int(0.8 * len(train_dataset))
     val_size = len(train_dataset) - train_size
     train_data, val_data = torch.utils.data.random_split(train_dataset, [train_size, val_size])
@@ -77,36 +88,38 @@ def objective(trial):
                                                 shuffle=True)
 
     # Define model architecture
-    model = CNNModel(conv1_channels, conv2_channels, conv3_channels, hidden_channels, hidden_layers)
+    model = CNNRNN(conv1_channels, conv2_channels, conv3_channels, hidden_channels, hidden_layers)
     model.to(device)
 
     # Define optimizer and loss function
     optimizer = torch.optim.Adam(model.parameters(), lr=lr)
     criterion = nn.CrossEntropyLoss()
+
+    # Train loop
     for epoch in range(num_epochs):
-        runnung_loss = 0.0
         for i, (images, labels) in enumerate(train_loader):
+
             # Load images as a torch tensor with gradient accumulation abilities
             images = images.requires_grad_().to(device)
             labels = labels.to(device)
-            # make input channel = 1
-            # print(images.shape)
+            
+            # Add a channel dimension to the images
             images = images.unsqueeze(-1)
+
             # Clear gradients w.r.t. parameters
             optimizer.zero_grad()
 
             # Forward pass to get output/logits
             outputs = model(images)
+            
+            # Reshape outputs and labels to match the loss function
             outputs = outputs.reshape(-1, 3, 1)
+
             # Calculate Loss: softmax --> cross entropy loss independently for each sequence element
             loss = criterion(outputs, labels[:,-1].unsqueeze(1).long())
 
-
-
             # Getting gradients w.r.t. parameters
             loss.backward()
-
-            runnung_loss += loss.item()
 
             # Updating parameters
             optimizer.step()
@@ -129,9 +142,11 @@ def objective(trial):
             raise optuna.exceptions.TrialPruned()
     return accuracy
 
+# Create a study and optimize the objective function
 study = optuna.create_study(direction='maximize')
 study.optimize(objective, n_trials=100)
 
+# Print optimization results
 best_trial = study.best_trial
 best_lr = best_trial.params['learning_rate']
 best_batch_size = best_trial.params['batch_size']
