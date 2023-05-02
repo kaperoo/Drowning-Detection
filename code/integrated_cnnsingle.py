@@ -5,7 +5,7 @@ from os.path import dirname, join
 
 import sys
 sys.path.append(join(dirname(__file__), "..\\yolov7"))
-sys.path.append(join(dirname(__file__), "..\\models"))
+sys.path.append(join(dirname(__file__), ".\\models"))
 from cnnsingle import CNNSINGLE
 
 from utils.datasets import letterbox
@@ -49,7 +49,7 @@ def run_inference(image):
     return output, image
 
 # draw bounding box and prediction
-def draw_box_and_pred(image, pred, file, conf):
+def draw_box_and_pred(image, pred, conf):
 
     # set the colour of the bounding box
     # also set the label text
@@ -74,94 +74,89 @@ def draw_box_and_pred(image, pred, file, conf):
     cv2.waitKey(1)
 
 # path to the video footage
-folder = [
-          '..\\dataset\\test\\te_underwater',
-          '..\\dataset\\test\\te_overhead'
-        ]
+footage = sys.argv[1]
 
 # load the cnn model
 cnnmodel = CNNSINGLE().to('cuda:0')
-with open('model_state_cnn.pt', 'rb') as f:
+with open('models\\model_cnnsingle.pt', 'rb') as f:
     cnnmodel.load_state_dict(torch.load(f))
 
-# Loop over videos in the folder
-for directory in folder:
-    for video_filename in os.listdir(os.path.join(directory)):
-        if not video_filename.endswith(".mp4"):
-            continue
+if not footage.endswith(".mp4"):
+    print("Not a video file")
+    exit()
 
-        # Load video
-        cap = cv2.VideoCapture(os.path.join(directory, video_filename))
+# Load video
+cap = cv2.VideoCapture(footage)
 
-        # loop over frames in the video    
-        while True:      
-            ret, frame = cap.read()
-            if not ret:
-                break
+# loop over frames in the video    
+while True:      
+    ret, frame = cap.read()
+    if not ret:
+        break
 
-            # apply filters to the frame
-            # Run YOLOv7 on the frame
-            frame = cv2.cvtColor(frame, cv2.COLOR_BGR2RGB)
-            output, image = run_inference(frame)
+    # apply filters to the frame
+    # Run YOLOv7 on the frame
+    frame = cv2.cvtColor(frame, cv2.COLOR_BGR2RGB)
+    output, image = run_inference(frame)
 
-            # Extract keypoints from the output adn apply non-max suppression
-            keypoints = []
-            keypoints = non_max_suppression_kpt(output, 
-                                        0.25, # Confidence Threshold
-                                        0.65, # IoU Threshold
-                                        nc=model.yaml['nc'], # Number of Classes
-                                        nkpt=model.yaml['nkpt'], # Number of Keypoints
-                                        kpt_label=True)
-            # get keypoints from filtered output
-            with torch.no_grad():
-                keypoints = output_to_keypoint(keypoints)
+    # Extract keypoints from the output adn apply non-max suppression
+    keypoints = []
+    keypoints = non_max_suppression_kpt(output, 
+                                0.25, # Confidence Threshold
+                                0.65, # IoU Threshold
+                                nc=model.yaml['nc'], # Number of Classes
+                                nkpt=model.yaml['nkpt'], # Number of Keypoints
+                                kpt_label=True)
+    # get keypoints from filtered output
+    with torch.no_grad():
+        keypoints = output_to_keypoint(keypoints)
 
-            # Convert keypoints to PyTorch tensor
-            keypoints = torch.tensor(keypoints).float()
+    # Convert keypoints to PyTorch tensor
+    keypoints = torch.tensor(keypoints).float()
 
-            # clone the keypoints to keep a copy for drawing
-            kpdisplay = keypoints.clone()
+    # clone the keypoints to keep a copy for drawing
+    kpdisplay = keypoints.clone()
 
-            # keep only the keypoints of the person with the highest confidence
-            if keypoints.shape[0] > 1:
-                keypoints = keypoints[torch.argmax(keypoints[:, 6]), :]
-            # if only one person is detected, keep the keypoints
-            elif keypoints.shape[0] == 1:
-                keypoints = keypoints[0, :]
-            # if no person is detected, continue to next frame
-            else:
-                continue
+    # keep only the keypoints of the person with the highest confidence
+    if keypoints.shape[0] > 1:
+        keypoints = keypoints[torch.argmax(keypoints[:, 6]), :]
+    # if only one person is detected, keep the keypoints
+    elif keypoints.shape[0] == 1:
+        keypoints = keypoints[0, :]
+    # if no person is detected, continue to next frame
+    else:
+        continue
 
-            # normalize keypoints to the center of the image
-            xchange = 640/2 - keypoints[2]
-            ychange = 384/2 - keypoints[3]
+    # normalize keypoints to the center of the image
+    xchange = 640/2 - keypoints[2]
+    ychange = 384/2 - keypoints[3]
 
-            # get rid of the first 7 elements of the keypoints tensor
-            keypoints = keypoints[7:]
-            # normalize the keypoints
-            for idx, point in enumerate(keypoints):
-                if idx % 3 == 0:
-                    keypoints[idx] = point + xchange
-                elif idx % 3 == 1:
-                    keypoints[idx] = point + ychange
+    # get rid of the first 7 elements of the keypoints tensor
+    keypoints = keypoints[7:]
+    # normalize the keypoints
+    for idx, point in enumerate(keypoints):
+        if idx % 3 == 0:
+            keypoints[idx] = point + xchange
+        elif idx % 3 == 1:
+            keypoints[idx] = point + ychange
 
-            # run the cnn model on the keypoints
-            pred = cnnmodel(keypoints.unsqueeze(0).to('cuda:0'))
+    # run the cnn model on the keypoints
+    pred = cnnmodel(keypoints.unsqueeze(0).to('cuda:0'))
 
-            # get the inference output
-            inf_output = torch.argmax(pred)
-            # get the confidence of the prediction
-            softmax = torch.nn.functional.softmax(pred, dim=1)
-            conf = torch.max(softmax, dim=1).values.item()
-            # round confidence to 2 decimal places
-            conf = round(conf, 2)
-            
-            # draw the bounding box and prediction
-            draw_box_and_pred(image, inf_output, video_filename, conf)
+    # get the inference output
+    inf_output = torch.argmax(pred)
+    # get the confidence of the prediction
+    softmax = torch.nn.functional.softmax(pred, dim=1)
+    conf = torch.max(softmax, dim=1).values.item()
+    # round confidence to 2 decimal places
+    conf = round(conf, 2)
+    
+    # draw the bounding box and prediction
+    draw_box_and_pred(image, inf_output, conf)
 
-            if cv2.waitKey(10) & 0xFF == ord('q'):
-                break
+    if cv2.waitKey(10) & 0xFF == ord('q'):
+        break
 
-        # Release video capture
-        cv2.destroyAllWindows()
-        cap.release()
+# Release video capture
+cv2.destroyAllWindows()
+cap.release()

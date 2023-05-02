@@ -2,7 +2,8 @@
 import torch
 import torch.nn as nn
 import sys
-sys.path.append("..\\datasets")
+from os.path import dirname, join
+sys.path.append(join(dirname(__file__), "..\\datasets"))
 from datasetrnn import KeypointDataset
 from torch import nn
 import optuna

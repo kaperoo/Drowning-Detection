@@ -4,11 +4,11 @@ from torchvision import transforms
 from os.path import dirname, join
 import sys
 
-sys.path.append(join(dirname(__file__), "..\\models"))
+sys.path.append(join(dirname(__file__), ".\\models"))
 from cnnrnn import CNNRNN
 
 
-sys.path.append(join(dirname(__file__), "..\\..\\yolov7"))
+sys.path.append(join(dirname(__file__), "..\\yolov7"))
 
 from utils.datasets import letterbox
 from utils.general import non_max_suppression_kpt, xywh2xyxy
@@ -16,7 +16,6 @@ from utils.plots import output_to_keypoint, plot_skeleton_kpts, plot_one_box
 
 import cv2
 import numpy as np
-import os
 
 
 # find available device
@@ -54,10 +53,11 @@ def run_inference(image):
         output, _ = model(image)
     return output, image
 
-def draw_box_and_pred(image, pred, file, conf):
+def draw_box_and_pred(image, pred, conf):
 
     # set the colour of the bounding box
     # also set the label text
+    colour = (100, 100, 100)
     if pred == 0:
         inf_text = 'drowning'
         colour = (0, 0, 100)
@@ -79,120 +79,115 @@ def draw_box_and_pred(image, pred, file, conf):
     
     return nimg
 
-# path to the video folder with footage
-folder = [
-          '..\\dataset\\test\\te_underwater',
-          '..\\dataset\\test\\te_overhead'
-        ]
+# get footage from command line
+footage = sys.argv[1]
 
 # set the max sequence length
 seq_length = 30
 
 # load the cnnrnn model
 cnnmodel = CNNRNN().to('cuda:0')
-with open('model_state_rnn.pt', 'rb') as f:
+with open('models\\model_cnnrnn.pt', 'rb') as f:
     cnnmodel.load_state_dict(torch.load(f))
 
-# Loop over videos in the folder
-for directory in folder:
-    for video_filename in os.listdir(os.path.join(directory)):
-        if not video_filename.endswith(".mp4"):
-            continue
+if not footage.endswith(".mp4"):
+    print("Not a video file")
+    exit()
 
-        # Load video
-        cap = cv2.VideoCapture(os.path.join(directory, video_filename))
+# Load video
+cap = cv2.VideoCapture(footage)
 
-        # Initialize frame buffer and output
-        frame_buffer = []
-        inf_output = None
+# Initialize frame buffer and output
+frame_buffer = []
+inf_output = None
 
-        # Loop over frames in the video
-        while True:  
-            ret, frame = cap.read()
-            if not ret:
-                break
+# Loop over frames in the video
+while True:  
+    ret, frame = cap.read()
+    if not ret:
+        break
 
-            # Apply filter and Run YOLOv7 on the frame
-            frame = cv2.cvtColor(frame, cv2.COLOR_BGR2RGB)
-            output, image = run_inference(frame)
+    # Apply filter and Run YOLOv7 on the frame
+    frame = cv2.cvtColor(frame, cv2.COLOR_BGR2RGB)
+    output, image = run_inference(frame)
 
-            # Extract keypoints from the output and apply non-max suppression
-            keypoints = []
-            keypoints = non_max_suppression_kpt(output, 
-                                        0.25, # Confidence Threshold
-                                        0.65, # IoU Threshold
-                                        nc=model.yaml['nc'], # Number of Classes
-                                        nkpt=model.yaml['nkpt'], # Number of Keypoints
-                                        kpt_label=True)
-            with torch.no_grad():
-                keypoints = output_to_keypoint(keypoints)
+    # Extract keypoints from the output and apply non-max suppression
+    keypoints = []
+    keypoints = non_max_suppression_kpt(output, 
+                                0.25, # Confidence Threshold
+                                0.65, # IoU Threshold
+                                nc=model.yaml['nc'], # Number of Classes
+                                nkpt=model.yaml['nkpt'], # Number of Keypoints
+                                kpt_label=True)
+    with torch.no_grad():
+        keypoints = output_to_keypoint(keypoints)
 
-            # Convert keypoints to PyTorch tensor
-            keypoints = torch.tensor(keypoints).float()
+    # Convert keypoints to PyTorch tensor
+    keypoints = torch.tensor(keypoints).float()
 
-            # copy keypoints to keep first 7 columns
-            kpdisplay = keypoints.clone()
+    # copy keypoints to keep first 7 columns
+    kpdisplay = keypoints.clone()
 
-            # if more than one person is detected, take the one with the highest confidence
-            if keypoints.shape[0] > 1:
-                keypoints = keypoints[torch.argmax(keypoints[:, 6]), :]
-            # if just one set of keypoints is detected, take that
-            elif keypoints.shape[0] == 1:
-                keypoints = keypoints[0, :]
-            # if no keypoints are detected, skip the frame
-            else:
-                continue
+    # if more than one person is detected, take the one with the highest confidence
+    if keypoints.shape[0] > 1:
+        keypoints = keypoints[torch.argmax(keypoints[:, 6]), :]
+    # if just one set of keypoints is detected, take that
+    elif keypoints.shape[0] == 1:
+        keypoints = keypoints[0, :]
+    # if no keypoints are detected, skip the frame
+    else:
+        continue
 
-            # normalize keypoints to the center of the image
-            xchange = 640/2 - keypoints[2]
-            ychange = 384/2 - keypoints[3]
+    # normalize keypoints to the center of the image
+    xchange = 640/2 - keypoints[2]
+    ychange = 384/2 - keypoints[3]
 
-            # get rid of the first 7 columns
-            keypoints = keypoints[7:]
-            # normalize keypoints to the center of the image
-            for idx, point in enumerate(keypoints):
-                if idx % 3 == 0:
-                    keypoints[idx] = point + xchange
-                elif idx % 3 == 1:
-                    keypoints[idx] = point + ychange
+    # get rid of the first 7 columns
+    keypoints = keypoints[7:]
+    # normalize keypoints to the center of the image
+    for idx, point in enumerate(keypoints):
+        if idx % 3 == 0:
+            keypoints[idx] = point + xchange
+        elif idx % 3 == 1:
+            keypoints[idx] = point + ychange
 
-            # reshape keypoints to 17x3 and append them to the buffer
-            keypoints = keypoints.reshape(17, 3)
-            frame_buffer.append(keypoints)
+    # reshape keypoints to 17x3 and append them to the buffer
+    keypoints = keypoints.reshape(17, 3)
+    frame_buffer.append(keypoints)
 
-            # remove the first element of the buffer if it is longer than the sequence length
-            if len(frame_buffer) > seq_length:
-                frame_buffer.pop(0)
+    # remove the first element of the buffer if it is longer than the sequence length
+    if len(frame_buffer) > seq_length:
+        frame_buffer.pop(0)
 
-            # if buffer is longer than 2, run inference
-            if len(frame_buffer) > 2:
-                # convert the buffer to a tensor
-                keypoints_tensor = torch.stack(frame_buffer, dim=0).unsqueeze(1).to(device)
-                keypoints_tensor = keypoints_tensor.reshape(1, len(frame_buffer), 17, 3, 1)
+    # if buffer is longer than 2, run inference
+    if len(frame_buffer) > 2:
+        # convert the buffer to a tensor
+        keypoints_tensor = torch.stack(frame_buffer, dim=0).unsqueeze(1).to(device)
+        keypoints_tensor = keypoints_tensor.reshape(1, len(frame_buffer), 17, 3, 1)
 
-                # run inference on the cnnrnn model
-                with torch.no_grad():
-                    output = cnnmodel(keypoints_tensor)
+        # run inference on the cnnrnn model
+        with torch.no_grad():
+            output = cnnmodel(keypoints_tensor)
 
-            # Get the predicted class
-            inf_output = np.argmax(output.cpu().numpy())
+    # Get the predicted class
+    inf_output = np.argmax(output.cpu().numpy())
 
-            # get the confidence of the prediction
-            softmax = torch.nn.functional.softmax(output, dim=2)
-            conf = torch.max(softmax, dim=2).values
+    # get the confidence of the prediction
+    softmax = torch.nn.functional.softmax(output, dim=2)
+    conf = torch.max(softmax, dim=2).values
 
-            # confidence over the predicted class
-            conf = torch.mean(conf).item()
-            # round confidence to 2 decimal places
-            conf = round(conf, 2)
+    # confidence over the predicted class
+    conf = torch.mean(conf).item()
+    # round confidence to 2 decimal places
+    conf = round(conf, 2)
 
-            # draw the prediction on the frame
-            nimg = draw_box_and_pred(image, inf_output, video_filename, conf)
-            cv2.waitKey(1)
+    # draw the prediction on the frame
+    nimg = draw_box_and_pred(image, inf_output, conf)
+    cv2.waitKey(1)
 
-            if cv2.waitKey(10) & 0xFF == ord('q'):
-                break
-            
-        # Release video capture
-        cv2.destroyAllWindows()
-        cap.release()
+    if cv2.waitKey(10) & 0xFF == ord('q'):
+        break
+    
+# Release video capture
+cv2.destroyAllWindows()
+cap.release()

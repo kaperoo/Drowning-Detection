@@ -3,10 +3,10 @@ import torch
 from torchvision import transforms
 from os.path import dirname, join
 
-from cnn import CNNModel
-
 import sys
 sys.path.append(join(dirname(__file__), "..\\yolov7"))
+sys.path.append(join(dirname(__file__), ".\\models"))
+from cnnsingle import CNNSINGLE
 
 from utils.datasets import letterbox
 from utils.general import non_max_suppression_kpt, xywh2xyxy
@@ -21,12 +21,10 @@ import time
 # Load YOLOv7 model
 device = torch.device("cuda:0" if torch.cuda.is_available() else "cpu")
 print(device)
-
 def load_model():
     model = torch.load(join(dirname(__file__), "..\\yolov7\\yolov7-w6-pose.pt"), map_location=device)['model']
     # Put in inference mode
     model.float().eval()
-
     if torch.cuda.is_available():
         print("Using GPU")
         # half() turns predictions into float16 tensors
@@ -38,16 +36,15 @@ model = load_model()
 
 # inference function
 def run_inference(image):
-    # Resize and pad image
-    # print(image.shape)
-    image = letterbox(image, new_shape = (640), stride=64, auto=True)[0] # shape: (567, 960, 3)
-    # print(image.shape) # 384x640
+    # Resize and pad image for faster inference
+    image = letterbox(image, new_shape = (640), stride=64, auto=True)[0]
     # Apply transforms
     image = transforms.ToTensor()(image) 
     if torch.cuda.is_available():
         image = image.half().to(device)
     # Turn image into batch
     image = image.unsqueeze(0)
+    # Run inference
     with torch.no_grad():
         output, _ = model(image)
     return output, image
